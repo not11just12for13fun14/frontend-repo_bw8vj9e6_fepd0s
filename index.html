@@ -267,7 +267,7 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     stage.appendChild(renderer.domElement);
 
-    const RADIUS = 1.4; // globe size
+    const RADIUS = 1.4; // globe size (base)
     const globe = new THREE.Group();
     scene.add(globe);
     camera.position.set(0, 0.12, 3.2);
@@ -606,7 +606,7 @@
     function fitCameraToSphere(radius){
       const fov = camera.fov * Math.PI/180;
       const dist = radius / Math.sin(fov/2); // perfect fit
-      camera.position.z = dist * 1.18; // padding for UI
+      camera.position.z = dist * 0.95; // closer to make globe ~20% larger on screen
     }
 
     function resize(){
@@ -642,14 +642,15 @@
     globe.add(planeGroup);
 
     function makeTinyPlane(){
-      const gBody = new THREE.ConeGeometry(0.03, 0.12, 12);
-      const mBody = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.2, roughness: 0.3, emissive: 0x0a0a0a, emissiveIntensity: 0.6 });
+      // Slightly larger + brighter for visibility
+      const gBody = new THREE.ConeGeometry(0.04, 0.16, 16);
+      const mBody = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.15, roughness: 0.25, emissive: 0x1a1a1a, emissiveIntensity: 0.9 });
       const body = new THREE.Mesh(gBody, mBody); body.rotation.x = Math.PI/2;
-      const gWing = new THREE.BoxGeometry(0.08, 0.01, 0.02);
-      const mWing = new THREE.MeshStandardMaterial({ color: 0x00A99D, emissive: 0x004c46, emissiveIntensity: 0.9 });
+      const gWing = new THREE.BoxGeometry(0.10, 0.012, 0.026);
+      const mWing = new THREE.MeshStandardMaterial({ color: 0x00A99D, emissive: 0x00665d, emissiveIntensity: 1.2 });
       const wing = new THREE.Mesh(gWing, mWing); wing.position.set(0,0,0);
-      const tail = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.03, 0.01), new THREE.MeshStandardMaterial({ color: 0xFF6B35, emissive: 0x411d0f, emissiveIntensity: 1.0 }));
-      tail.position.set(0, -0.05, 0.0);
+      const tail = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.038, 0.012), new THREE.MeshStandardMaterial({ color: 0xFF6B35, emissive: 0x5a2612, emissiveIntensity: 1.5 }));
+      tail.position.set(0, -0.06, 0.0);
       const p = new THREE.Group();
       p.add(body); p.add(wing); p.add(tail);
       return p;
@@ -670,7 +671,7 @@
     }
 
     const planes = [];
-    const PLANE_ALT = RADIUS * 1.07;
+    const PLANE_ALT = RADIUS * 1.12; // slightly higher for clear separation above atmosphere
 
     function spawnPlane(){
       const a = randLatLon();
@@ -698,7 +699,8 @@
         const posNext = vNext.clone().multiplyScalar(PLANE_ALT);
         p.mesh.lookAt(posNext);
       }
-      if(planes.length < 6 && Math.random() < 0.02){
+      // Keep a healthy stream of planes
+      if(planes.length < 6 && Math.random() < 0.03){
         spawnPlane();
       }
     }
@@ -738,17 +740,14 @@
       window.addEventListener('resize', resize);
       resize();
       focusRegion('asia');
-      for(let i=0;i<3;i++) spawnPlane();
+      for(let i=0;i<4;i++) spawnPlane();
       animate(0);
     }
 
     // Load earth texture and then dismiss splash when ready
-    loader.load(
-      TEX_URL,
-      (tex)=>{ earthMat.map = tex; earthMat.needsUpdate = true; log('tex','loaded'); dismissSplash(); },
-      undefined,
-      (err)=>{ console.warn('Texture load failed; proceeding sans map', err); dismissSplash(); }
-    );
+    const earthTexOnLoad = (tex)=>{ earthMat.map = tex; earthMat.needsUpdate = true; log('tex','loaded'); dismissSplash(); };
+    const earthTexOnErr = (err)=>{ console.warn('Texture load failed; proceeding sans map', err); dismissSplash(); };
+    loader.load(TEX_URL, earthTexOnLoad, undefined, earthTexOnErr);
 
     init();
   })();
