@@ -21,13 +21,17 @@
     a{color:inherit; text-decoration:none}
 
     /* Splash screen */
-    .splash{position:fixed; inset:0; z-index:100; display:grid; place-items:center; background:radial-gradient(1000px 500px at 50% -120px, rgba(255,107,53,.12), transparent), #0A0A0A; transition:opacity .6s ease}
+    .splash{position:fixed; inset:0; z-index:100; display:grid; place-items:center; background:radial-gradient(1200px 600px at 50% -120px, rgba(255,107,53,.12), transparent), #0A0A0A; transition:opacity .6s ease}
     .splash.hide{opacity:0; pointer-events:none}
-    .splash .brand{display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center}
-    .splash .logo{line-height:.9; filter:drop-shadow(0 18px 60px rgba(0,0,0,.55))}
-    .splash .logo .dura{display:block; font-weight:900; font-size:clamp(48px, 8.2vw, 120px); color:var(--orange); letter-spacing:-0.5px; text-shadow:0 10px 30px rgba(255,107,53,.18)}
-    .splash .logo .sim{display:block; font-weight:900; font-size:clamp(42px, 7.4vw, 108px); color:var(--teal); margin-left:12%; letter-spacing:-0.5px}
-    .splash .tag{font-size:clamp(13px, 1.8vw, 16px); color:#cfd3d6; opacity:.9}
+    .splash .brand{position:relative; display:flex; flex-direction:column; align-items:center; gap:14px; text-align:center; padding:24px 16px}
+    .splash .logo{line-height:.86; filter:drop-shadow(0 18px 60px rgba(0,0,0,.55))}
+    .splash .logo .dura{display:block; font-weight:1000; font-size:clamp(72px, 12vw, 180px); color:var(--orange); letter-spacing:-0.8px; text-shadow:0 12px 38px rgba(255,107,53,.22)}
+    .splash .logo .sim{display:block; font-weight:1000; font-size:clamp(62px, 10.8vw, 160px); color:var(--teal); margin-left:14%; letter-spacing:-0.8px}
+    .splash .tag{font-size:clamp(16px, 2.2vw, 24px); color:#e8e8e8; opacity:.95}
+    .splash .shimmer{position:relative; width:min(62vw, 520px); height:10px; border-radius:999px; overflow:hidden; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.06)}
+    .splash .shimmer::before{content:""; position:absolute; inset:-2px; background:linear-gradient(90deg, transparent, rgba(255,255,255,.28), transparent); transform:translateX(-100%); animation:sh 1.2s infinite ease}
+    @keyframes sh{0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
+    .splash-map{position:absolute; inset:0; z-index:-1; opacity:.18; filter:blur(.4px);}
 
     /* Layers */
     #three-stage{position:fixed; inset:0; z-index:0; background:radial-gradient(1200px 600px at 50% -100px, rgba(255,107,53,.08), transparent), #0A0A0A}
@@ -36,8 +40,8 @@
     /* Header + Large Logo */
     .header{position:fixed; top:18px; left:18px; z-index:5; display:flex; flex-direction:column; align-items:flex-start; gap:12px; max-width:min(46vw, 600px)}
     .logo-stack{pointer-events:none; line-height:.9}
-    .logo-stack .dura{display:block; font-weight:900; font-size:clamp(40px, 7vw, 112px); color:var(--orange); letter-spacing:-0.5px; text-shadow:0 10px 30px rgba(255,107,53,.15)}
-    .logo-stack .sim{display:block; font-weight:900; font-size:clamp(36px, 6.2vw, 96px); color:var(--teal); margin-left:14%; letter-spacing:-0.5px}
+    .logo-stack .dura{display:block; font-weight:900; font-size:clamp(48px, 9vw, 132px); color:var(--orange); letter-spacing:-0.6px; text-shadow:0 10px 30px rgba(255,107,53,.15)}
+    .logo-stack .sim{display:block; font-weight:900; font-size:clamp(42px, 8.2vw, 112px); color:var(--teal); margin-left:14%; letter-spacing:-0.6px}
 
     /* Menu tile (top-right) */
     .menu-tile{position:fixed; top:18px; right:18px; z-index:6; background:var(--teal); color:#0A0A0A; font-weight:900; border-radius:12px; padding:10px 14px; border:1px solid rgba(255,255,255,.08); box-shadow:0 10px 30px rgba(0,169,157,.22); cursor:pointer; backdrop-filter:blur(6px); transition:transform .2s ease, box-shadow .2s ease}
@@ -119,8 +123,8 @@
       .regions{right:14px; bottom:84px; top:auto; transform:none; flex-direction:row; overflow:auto; padding-bottom:6px; width:auto}
       .region{min-width:220px}
       .header{max-width:min(70vw, 560px)}
-      .logo-stack .dura{font-size:clamp(34px, 8vw, 72px)}
-      .logo-stack .sim{font-size:clamp(30px, 7.2vw, 64px)}
+      .logo-stack .dura{font-size:clamp(40px, 9.6vw, 96px)}
+      .logo-stack .sim{font-size:clamp(36px, 8.8vw, 88px)}
       .addon{left:14px; bottom:130px; max-width:70vw}
     }
     @media (max-width: 820px){
@@ -131,12 +135,14 @@
 <body>
   <!-- Splash Screen -->
   <div id="splash" class="splash" role="dialog" aria-label="Loading DuraSim">
+    <canvas id="splashMap" class="splash-map" aria-hidden="true"></canvas>
     <div class="brand">
       <div class="logo" aria-hidden="true">
         <span class="dura">Dura</span>
         <span class="sim">Sim</span>
       </div>
       <div class="tag">one plan multiple people, zero hassle</div>
+      <div class="shimmer" aria-hidden="true"></div>
     </div>
   </div>
 
@@ -418,6 +424,8 @@
     const tileCountries = document.getElementById('tileCountries');
     const addon = document.getElementById('addon');
     const splash = document.getElementById('splash');
+    const splashMap = document.getElementById('splashMap');
+    const smctx = splashMap.getContext('2d');
 
     // Add-people slider logic
     const ADDON_FEE = 10; // £ per additional person
@@ -574,18 +582,37 @@
       camera.aspect = w/h; camera.updateProjectionMatrix();
       drawStars(0);
       setTileTargetCenter();
+
+      // Splash map canvas sizing
+      splashMap.width = w * devicePixelRatio; 
+      splashMap.height = h * devicePixelRatio; 
+      splashMap.style.width = w + 'px';
+      splashMap.style.height = h + 'px';
+      smctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+      drawSplashMap();
     }
 
-    // Stars draw
-    function drawStars(offsetY){
-      const w = stars.width, h = stars.height;
-      sctx.clearRect(0,0,w,h);
-      for(const s of starField){
-        const px = s.x * w;
-        const py = (s.y * h) + offsetY * (0.08 + s.r*0.02);
-        sctx.beginPath(); sctx.arc(px, ((py%h)+h)%h, s.r, 0, Math.PI*2); sctx.closePath();
-        sctx.fillStyle = `rgba(255,255,255,${s.o})`; sctx.fill();
+    function drawSplashMap(){
+      const w = splashMap.width / devicePixelRatio; const h = splashMap.height / devicePixelRatio;
+      smctx.clearRect(0,0,w,h);
+      smctx.lineWidth = 1.0; smctx.strokeStyle = 'rgba(255,107,53,0.45)';
+      // Graticule lines every 15°
+      const step = 15; 
+      // Longitudes
+      for(let lon=-180; lon<=180; lon+=step){
+        const x = (lon + 180) / 360 * w;
+        smctx.beginPath(); smctx.moveTo(x, 0); smctx.lineTo(x, h); smctx.stroke();
       }
+      // Latitudes
+      for(let lat=-75; lat<=75; lat+=step){
+        const y = (1 - (lat + 90) / 180) * h;
+        smctx.beginPath(); smctx.moveTo(0, y); smctx.lineTo(w, y); smctx.stroke();
+      }
+      // Emphasize equator & prime meridian subtly
+      smctx.lineWidth = 1.6; smctx.strokeStyle = 'rgba(255,107,53,0.55)';
+      const x0 = (0 + 180) / 360 * w; const y0 = (1 - (0 + 90) / 180) * h;
+      smctx.beginPath(); smctx.moveTo(x0, 0); smctx.lineTo(x0, h); smctx.stroke();
+      smctx.beginPath(); smctx.moveTo(0, y0); smctx.lineTo(w, y0); smctx.stroke();
     }
 
     // Splash dismissal controller tied to globe texture
