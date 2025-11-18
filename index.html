@@ -556,35 +556,7 @@
       el.addEventListener('click', ()=>{ focusRegion(key); });
     });
 
-    // Header/nav
-    const nav = document.getElementById('navOverlay');
-    document.getElementById('menuTile').addEventListener('click', ()=>{ nav.classList.add('open'); log('nav','open'); });
-    document.getElementById('closeNav').addEventListener('click', ()=>{ nav.classList.remove('open'); log('nav','close'); });
-    nav.addEventListener('click', (e)=>{ if(e.target===nav){ nav.classList.remove('open'); log('nav','close-backdrop'); } });
-
-    // Referral
-    const share = document.getElementById('share');
-    document.getElementById('invite').addEventListener('click', ()=>{ share.classList.add('open'); log('referral','open'); });
-    share.addEventListener('click', (e)=>{ if(e.target===share){ share.classList.remove('open'); log('referral','close-backdrop'); } });
-    document.getElementById('copy').addEventListener('click', ()=>{ const v = document.getElementById('refLink').value; navigator.clipboard && navigator.clipboard.writeText(v); log('referral','copy', v); });
-
-    // Resize
-    function resize(){
-      const w = window.innerWidth, h = window.innerHeight;
-      stars.width = w; stars.height = h;
-      renderer.setSize(w, h, false);
-      camera.aspect = w/h; camera.updateProjectionMatrix();
-      fitCameraToSphere(RADIUS);
-      drawStars(0);
-      sizeSplash();
-    }
-
-    function fitCameraToSphere(radius){
-      const fov = camera.fov * Math.PI/180;
-      const dist = radius / Math.sin(fov/2); // perfect fit
-      camera.position.z = dist * 1.18; // padding for UI
-    }
-
+    // Stars + renderer sizing
     function drawStars(t){
       const w = stars.width, h = stars.height;
       sctx.clearRect(0,0,w,h);
@@ -630,9 +602,26 @@
       smctx.beginPath(); smctx.moveTo(0, y0); smctx.lineTo(w, y0); smctx.stroke();
     }
 
-    // Splash dismissal controller tied to globe texture
+    // Resize
+    function fitCameraToSphere(radius){
+      const fov = camera.fov * Math.PI/180;
+      const dist = radius / Math.sin(fov/2); // perfect fit
+      camera.position.z = dist * 1.18; // padding for UI
+    }
+
+    function resize(){
+      const w = window.innerWidth, h = window.innerHeight;
+      stars.width = w; stars.height = h;
+      renderer.setSize(w, h, false);
+      camera.aspect = w/h; camera.updateProjectionMatrix();
+      fitCameraToSphere(RADIUS);
+      drawStars(0);
+      sizeSplash();
+    }
+
+    // Splash dismissal controller
     const splashStart = performance.now();
-    const MIN_SPLASH_MS = 700; // avoid flash for fast caches
+    const MIN_SPLASH_MS = 700;
     let splashDone = false;
     function dismissSplash(){
       if (splashDone) return; splashDone = true;
@@ -647,14 +636,6 @@
         }, 650);
       }, wait);
     }
-
-    // Load earth texture and then dismiss splash when ready
-    loader.load(
-      TEX_URL,
-      (tex)=>{ earthMat.map = tex; earthMat.needsUpdate = true; log('tex','loaded'); dismissSplash(); },
-      undefined,
-      (err)=>{ console.warn('Texture load failed; proceeding sans map', err); dismissSplash(); }
-    );
 
     // Tiny planes flying periodically
     const planeGroup = new THREE.Group();
@@ -675,7 +656,7 @@
     }
 
     function randLatLon(){
-      const lat = (Math.random()*120 - 60); // avoid poles for nicer paths
+      const lat = (Math.random()*120 - 60);
       const lon = (Math.random()*360 - 180);
       return {lat, lon};
     }
@@ -704,9 +685,8 @@
     function updatePlanes(dt){
       for(let i=planes.length-1;i>=0;i--){
         const p = planes[i];
-        p.t += p.speed * dt; // dt scaled later
+        p.t += p.speed * dt;
         if(p.t >= 1){
-          // remove and respawn elsewhere
           planeGroup.remove(p.mesh);
           planes.splice(i,1);
           continue;
@@ -714,12 +694,10 @@
         const v = new THREE.Vector3().copy(p.a).slerp(p.b, p.t).normalize();
         const pos = v.clone().multiplyScalar(PLANE_ALT);
         p.mesh.position.copy(pos);
-        // orientation: look a bit ahead along the path
         const vNext = new THREE.Vector3().copy(p.a).slerp(p.b, Math.min(1, p.t+0.01)).normalize();
         const posNext = vNext.clone().multiplyScalar(PLANE_ALT);
         p.mesh.lookAt(posNext);
       }
-      // keep a few planes alive
       if(planes.length < 6 && Math.random() < 0.02){
         spawnPlane();
       }
@@ -732,70 +710,44 @@
       const now = performance.now();
       const dt = Math.min(60, now - last); last = now;
 
-      // Ease rotations (group)
       const k = 0.06;
       yaw += (targetYaw - yaw) * k;
       pitch += (targetPitch - pitch) * k;
       pitch = Math.max(-0.8, Math.min(0.8, pitch));
       globe.rotation.set(pitch, yaw, 0);
 
-      // Gentle base spin
       earth.rotation.y += 0.0007;
 
-      // Plan glow decay
       planBoost *= 0.93;
       overlays.forEach(m=>{ m.userData.uniforms.uPlanBoost.value = planBoost; });
 
-      // Hotspots placement
       placeHotspots();
 
-      // Tile micro scale ease
       tileScale += (targetScale - tileScale) * 0.08;
       tile.style.transform = `translate(-50%,-50%) scale(${tileScale.toFixed(3)})`;
 
-      // Stars
       drawStars(t || 0);
 
-      // Planes
       updatePlanes(dt);
 
-      // Render
       renderer.render(scene, camera);
     }
 
-    // Seed overlays with initial selection
+    // Init
     function init(){
       window.addEventListener('resize', resize);
       resize();
       focusRegion('asia');
-      // start with a couple planes
       for(let i=0;i<3;i++) spawnPlane();
       animate(0);
     }
 
-    // Splash dismiss after texture load
-    const splashStart = performance.now();
-    const MIN_SPLASH_MS = 700;
-    let splashDone = false;
-    function dismissSplash(){
-      if (splashDone) return; splashDone = true;
-      const elapsed = performance.now() - splashStart;
-      const wait = Math.max(0, MIN_SPLASH_MS - elapsed);
-      setTimeout(()=>{
-        splash.classList.add('hide');
-        setTimeout(()=>{
-          splash.remove();
-          document.getElementById('heroText').classList.add('show');
-          setTimeout(()=>addon.classList.add('show'), 400);
-        }, 650);
-      }, wait);
-    }
-
+    // Load earth texture and then dismiss splash when ready
     loader.load(
       TEX_URL,
-      (tex)=>{ earthMat.map = tex; earthMat.needsUpdate = true; dismissSplash(); },
+      (tex)=>{ earthMat.map = tex; earthMat.needsUpdate = true; log('tex','loaded'); dismissSplash(); },
       undefined,
-      ()=>{ dismissSplash(); }
+      (err)=>{ console.warn('Texture load failed; proceeding sans map', err); dismissSplash(); }
     );
 
     init();
