@@ -270,22 +270,23 @@
     const RADIUS = 1.4; // globe size
     const globe = new THREE.Group();
     scene.add(globe);
-    camera.position.set(0, 0.15, 3.2);
+    camera.position.set(0, 0.12, 3.2);
 
-    // Lights
-    const amb = new THREE.AmbientLight(0xffffff, 0.65); scene.add(amb);
-    const dir = new THREE.DirectionalLight(0xffffff, 1.0); dir.position.set(5,3,5); scene.add(dir);
+    // Lights — darker, night‑mode friendly
+    const amb = new THREE.AmbientLight(0x3a3a3a, 0.6); scene.add(amb);
+    const hemi = new THREE.HemisphereLight(0x0b1220, 0x22150f, 0.35); scene.add(hemi);
+    const dir = new THREE.DirectionalLight(0xfff3e0, 0.55); dir.position.set(5,3,5); scene.add(dir);
 
-    // Earth base
+    // Earth base — slightly darkened
     const loader = new THREE.TextureLoader();
     const TEX_URL = 'https://unpkg.com/three@0.158.0/examples/textures/land_ocean_ice_cloud_2048.jpg';
     const earthGeo = new THREE.SphereGeometry(RADIUS, 96, 96);
-    const earthMat = new THREE.MeshPhongMaterial({ shininess: 8 });
+    const earthMat = new THREE.MeshPhongMaterial({ shininess: 6, color: 0x9a9a9a });
     const earth = new THREE.Mesh(earthGeo, earthMat); globe.add(earth);
 
-    // Atmosphere
+    // Atmosphere rim
     const atmoGeo = new THREE.SphereGeometry(RADIUS*1.03, 64, 64);
-    const atmoMat = new THREE.MeshBasicMaterial({ color: 0xFF6B35, transparent:true, opacity:0.08, blending: THREE.AdditiveBlending });
+    const atmoMat = new THREE.MeshBasicMaterial({ color: 0x1aa39a, transparent:true, opacity:0.10, blending: THREE.AdditiveBlending });
     const atmo = new THREE.Mesh(atmoGeo, atmoMat); globe.add(atmo);
 
     // Region outline overlays (teal lines, orange glow when selected)
@@ -333,10 +334,10 @@
         uSelLon: { value: 0.0 },
         uSelected: { value: 0.0 },
         uPlanBoost: { value: 0.0 },
-        uTealIntensity: { value: 0.9 },
-        uOrangeIntensity: { value: 0.85 },
+        uTealIntensity: { value: 0.85 },
+        uOrangeIntensity: { value: 0.75 },
         uOrangeWidth: { value: 0.55 },
-        uOpacity: { value: 1.0 }
+        uOpacity: { value: 0.9 }
       };
       const mat = new THREE.ShaderMaterial({
         uniforms,
@@ -575,12 +576,13 @@
       camera.aspect = w/h; camera.updateProjectionMatrix();
       fitCameraToSphere(RADIUS);
       drawStars(0);
+      sizeSplash();
     }
 
     function fitCameraToSphere(radius){
       const fov = camera.fov * Math.PI/180;
       const dist = radius / Math.sin(fov/2); // perfect fit
-      camera.position.z = dist * 1.15; // add a little padding
+      camera.position.z = dist * 1.18; // padding for UI
     }
 
     function drawStars(t){
@@ -613,19 +615,15 @@
       const w = splashMap.width / devicePixelRatio; const h = splashMap.height / devicePixelRatio;
       smctx.clearRect(0,0,w,h);
       smctx.lineWidth = 1.0; smctx.strokeStyle = 'rgba(255,107,53,0.45)';
-      // Graticule lines every 15°
       const step = 15; 
-      // Longitudes
       for(let lon=-180; lon<=180; lon+=step){
         const x = (lon + 180) / 360 * w;
         smctx.beginPath(); smctx.moveTo(x, 0); smctx.lineTo(x, h); smctx.stroke();
       }
-      // Latitudes
       for(let lat=-75; lat<=75; lat+=step){
         const y = (1 - (lat + 90) / 180) * h;
         smctx.beginPath(); smctx.moveTo(0, y); smctx.lineTo(w, y); smctx.stroke();
       }
-      // Emphasize equator & prime meridian subtly
       smctx.lineWidth = 1.6; smctx.strokeStyle = 'rgba(255,107,53,0.55)';
       const x0 = (0 + 180) / 360 * w; const y0 = (1 - (0 + 90) / 180) * h;
       smctx.beginPath(); smctx.moveTo(x0, 0); smctx.lineTo(x0, h); smctx.stroke();
@@ -658,25 +656,95 @@
       (err)=>{ console.warn('Texture load failed; proceeding sans map', err); dismissSplash(); }
     );
 
+    // Tiny planes flying periodically
+    const planeGroup = new THREE.Group();
+    globe.add(planeGroup);
+
+    function makeTinyPlane(){
+      const gBody = new THREE.ConeGeometry(0.03, 0.12, 12);
+      const mBody = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.2, roughness: 0.3, emissive: 0x0a0a0a, emissiveIntensity: 0.6 });
+      const body = new THREE.Mesh(gBody, mBody); body.rotation.x = Math.PI/2;
+      const gWing = new THREE.BoxGeometry(0.08, 0.01, 0.02);
+      const mWing = new THREE.MeshStandardMaterial({ color: 0x00A99D, emissive: 0x004c46, emissiveIntensity: 0.9 });
+      const wing = new THREE.Mesh(gWing, mWing); wing.position.set(0,0,0);
+      const tail = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.03, 0.01), new THREE.MeshStandardMaterial({ color: 0xFF6B35, emissive: 0x411d0f, emissiveIntensity: 1.0 }));
+      tail.position.set(0, -0.05, 0.0);
+      const p = new THREE.Group();
+      p.add(body); p.add(wing); p.add(tail);
+      return p;
+    }
+
+    function randLatLon(){
+      const lat = (Math.random()*120 - 60); // avoid poles for nicer paths
+      const lon = (Math.random()*360 - 180);
+      return {lat, lon};
+    }
+
+    function vecFromLatLon(lat, lon){
+      const toRad = Math.PI/180; const phi = (90-lat)*toRad; const theta = (lon+180)*toRad;
+      const x = -Math.sin(phi) * Math.cos(theta);
+      const z =  Math.sin(phi) * Math.sin(theta);
+      const y =  Math.cos(phi);
+      return new THREE.Vector3(x,y,z).normalize();
+    }
+
+    const planes = [];
+    const PLANE_ALT = RADIUS * 1.07;
+
+    function spawnPlane(){
+      const a = randLatLon();
+      const b = randLatLon();
+      const va = vecFromLatLon(a.lat, a.lon);
+      const vb = vecFromLatLon(b.lat, b.lon);
+      const plane = makeTinyPlane();
+      planeGroup.add(plane);
+      planes.push({ mesh: plane, a: va, b: vb, t: 0, speed: 0.001 + Math.random()*0.0012 });
+    }
+
+    function updatePlanes(dt){
+      for(let i=planes.length-1;i>=0;i--){
+        const p = planes[i];
+        p.t += p.speed * dt; // dt scaled later
+        if(p.t >= 1){
+          // remove and respawn elsewhere
+          planeGroup.remove(p.mesh);
+          planes.splice(i,1);
+          continue;
+        }
+        const v = new THREE.Vector3().copy(p.a).slerp(p.b, p.t).normalize();
+        const pos = v.clone().multiplyScalar(PLANE_ALT);
+        p.mesh.position.copy(pos);
+        // orientation: look a bit ahead along the path
+        const vNext = new THREE.Vector3().copy(p.a).slerp(p.b, Math.min(1, p.t+0.01)).normalize();
+        const posNext = vNext.clone().multiplyScalar(PLANE_ALT);
+        p.mesh.lookAt(posNext);
+      }
+      // keep a few planes alive
+      if(planes.length < 6 && Math.random() < 0.02){
+        spawnPlane();
+      }
+    }
+
     // Animation loop
+    let last = performance.now();
     function animate(t){
       requestAnimationFrame(animate);
+      const now = performance.now();
+      const dt = Math.min(60, now - last); last = now;
 
-      // Ease rotations
+      // Ease rotations (group)
       const k = 0.06;
       yaw += (targetYaw - yaw) * k;
       pitch += (targetPitch - pitch) * k;
       pitch = Math.max(-0.8, Math.min(0.8, pitch));
       globe.rotation.set(pitch, yaw, 0);
 
-      // Gentle base spin so it's alive when idle
-      earth.rotation.y += 0.0008;
+      // Gentle base spin
+      earth.rotation.y += 0.0007;
 
       // Plan glow decay
       planBoost *= 0.93;
-      overlays.forEach(m=>{
-        m.userData.uniforms.uPlanBoost.value = planBoost;
-      });
+      overlays.forEach(m=>{ m.userData.uniforms.uPlanBoost.value = planBoost; });
 
       // Hotspots placement
       placeHotspots();
@@ -688,18 +756,47 @@
       // Stars
       drawStars(t || 0);
 
+      // Planes
+      updatePlanes(dt);
+
       // Render
       renderer.render(scene, camera);
     }
 
     // Seed overlays with initial selection
     function init(){
-      window.addEventListener('resize', ()=>{ resize(); sizeSplash(); });
+      window.addEventListener('resize', resize);
       resize();
-      sizeSplash();
       focusRegion('asia');
+      // start with a couple planes
+      for(let i=0;i<3;i++) spawnPlane();
       animate(0);
     }
+
+    // Splash dismiss after texture load
+    const splashStart = performance.now();
+    const MIN_SPLASH_MS = 700;
+    let splashDone = false;
+    function dismissSplash(){
+      if (splashDone) return; splashDone = true;
+      const elapsed = performance.now() - splashStart;
+      const wait = Math.max(0, MIN_SPLASH_MS - elapsed);
+      setTimeout(()=>{
+        splash.classList.add('hide');
+        setTimeout(()=>{
+          splash.remove();
+          document.getElementById('heroText').classList.add('show');
+          setTimeout(()=>addon.classList.add('show'), 400);
+        }, 650);
+      }, wait);
+    }
+
+    loader.load(
+      TEX_URL,
+      (tex)=>{ earthMat.map = tex; earthMat.needsUpdate = true; dismissSplash(); },
+      undefined,
+      ()=>{ dismissSplash(); }
+    );
 
     init();
   })();
