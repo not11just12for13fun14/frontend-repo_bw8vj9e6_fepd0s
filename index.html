@@ -44,7 +44,7 @@
     .hotspot::after{content:""; position:absolute; inset:-8px; border-radius:inherit; border:1px solid rgba(255,107,53,.5); animation:pulse 1.8s infinite ease-out}
     @keyframes pulse{0%{transform:scale(0.9); opacity:.9} 70%{transform:scale(1.3); opacity:0} 100%{opacity:0}}
 
-    /* Floating plan tile (follows hotspot) */
+    /* Floating plan tile (centered) */
     .tile{position:fixed; z-index:4; min-width:280px; max-width:360px; background:rgba(26,26,26,.94); border:1px solid var(--ring); border-radius:16px; padding:12px; box-shadow:0 18px 56px rgba(0,0,0,.55); left:50%; top:50%; transform:translate(-50%,-50%) scale(.92); opacity:0; pointer-events:none; transition:opacity .22s ease, background .35s ease, box-shadow .35s ease}
     .tile.show{opacity:1; pointer-events:auto}
     .tile.appear{background:linear-gradient(180deg, rgba(255,107,53,.14), rgba(26,26,26,.94)); box-shadow:0 24px 80px rgba(255,107,53,.20), 0 18px 56px rgba(0,0,0,.55)}
@@ -241,6 +241,8 @@
       renderer.setSize(w, h, false);
       camera.aspect = w/h; camera.updateProjectionMatrix();
       drawStars(0);
+      // Keep the tile target centered on resize
+      setTileTargetCenter();
     }
 
     // Regions
@@ -271,19 +273,55 @@
     const tileCountries = document.getElementById('tileCountries');
     const addon = document.getElementById('addon');
 
-    // Scroll navigate regions
-    function stepToRegion(dir){
-      regionIndex = (regionIndex + (dir>0?1:-1) + regions.length) % regions.length;
-      focusRegion(regions[regionIndex].key);
-      log('scroll-step -> region', regions[regionIndex].key);
+    // Floating tile behavior — center of viewport
+    let tileX = window.innerWidth/2, tileY = window.innerHeight/2; // current
+    let targetTileX = tileX, targetTileY = tileY; // target
+    let tileScale = 0.92, targetScale = 1.0;
+
+    function updateTileFor(key){
+      const r = regions.find(x=>x.key===key); if(!r) return;
+      tileTitle.textContent = r.name;
+      tileTag.textContent = r.tag;
+      // Countries
+      tileCountries.innerHTML = '';
+      r.countries.forEach(c=>{
+        const span = document.createElement('span');
+        span.className = 'badge'; span.textContent = c; tileCountries.appendChild(span);
+      });
+      // Reset selected plan state
+      tile.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel'));
     }
-    function onWheel(e){
-      e.preventDefault();
-      if(firstScroll){ document.getElementById('scrollInd').classList.add('hide'); firstScroll=false; }
-      const dir = Math.sign(e.deltaY);
-      stepToRegion(dir);
+
+    function setTileTargetCenter(){
+      targetTileX = window.innerWidth/2;
+      targetTileY = window.innerHeight/2;
     }
-    window.addEventListener('wheel', onWheel, {passive:false});
+
+    function showTileWithHue(){
+      tile.classList.add('show','appear');
+      tileScale = 0.92; targetScale = 1.0;
+      clearTimeout(showTileWithHue._t);
+      showTileWithHue._t = setTimeout(()=> tile.classList.remove('appear'), 650);
+    }
+
+    function focusRegion(key){
+      const r = regions.find(x=>x.key===key);
+      if(!r) return;
+      const t = yawPitchFor(r.lat, r.lon);
+      targetYaw = Math.round(t.yaw/STEP)*STEP; // snap yaw to 30°
+      targetPitch = t.pitch;
+      regionIndex = regions.findIndex(x=>x.key===key);
+      // UI updates
+      updateTileFor(key);
+      setSelectedRegionChip(key);
+      // Start tile at hotspot position for a fluid entrance, then move to center
+      const p = projectLatLon(r.lat, r.lon);
+      tileX = p.x; tileY = p.y; tileScale = 0.92; targetScale = 1.0;
+      setTileTargetCenter();
+      showTileWithHue();
+      addon.classList.add('show');
+      log('focus', key);
+    }
 
     // Project lat/lon to screen
     const tmp = new THREE.Vector3();
@@ -316,65 +354,6 @@
         const el = hs[r.key];
         el.style.left = p.x+'px'; el.style.top = p.y+'px'; el.style.opacity = p.visible ? 1 : 0.2;
       });
-    }
-
-    // Floating tile behavior — follow hotspot smoothly
-    let tileX = window.innerWidth/2, tileY = window.innerHeight/2; // current
-    let targetTileX = tileX, targetTileY = tileY; // target
-    let tileScale = 0.92, targetScale = 1.0;
-
-    function updateTileFor(key){
-      const r = regions.find(x=>x.key===key); if(!r) return;
-      tileTitle.textContent = r.name;
-      tileTag.textContent = r.tag;
-      // Countries
-      tileCountries.innerHTML = '';
-      r.countries.forEach(c=>{
-        const span = document.createElement('span');
-        span.className = 'badge'; span.textContent = c; tileCountries.appendChild(span);
-      });
-      // Reset selected plan state
-      tile.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel'));
-    }
-
-    function setTileTargetNearHotspot(key){
-      const r = regions.find(x=>x.key===key); if(!r) return;
-      const p = projectLatLon(r.lat, r.lon);
-      // Offset the tile slightly above-right of the hotspot so they feel connected
-      const offsetX = 120; const offsetY = -110;
-      targetTileX = p.x + offsetX;
-      targetTileY = p.y + offsetY;
-      // Clamp inside viewport with margins
-      const m = 14; const w = window.innerWidth; const h = window.innerHeight;
-      targetTileX = Math.max(m+160, Math.min(w-m-10, targetTileX));
-      targetTileY = Math.max(m+80, Math.min(h-m-110, targetTileY));
-    }
-
-    function showTileWithHue(){
-      tile.classList.add('show','appear');
-      tileScale = 0.92; targetScale = 1.0;
-      // Remove the orange hue after a short glow so it doesn't stay too strong
-      clearTimeout(showTileWithHue._t);
-      showTileWithHue._t = setTimeout(()=> tile.classList.remove('appear'), 650);
-    }
-
-    function focusRegion(key){
-      const r = regions.find(x=>x.key===key);
-      if(!r) return;
-      const t = yawPitchFor(r.lat, r.lon);
-      targetYaw = Math.round(t.yaw/STEP)*STEP; // snap yaw to 30°
-      targetPitch = t.pitch;
-      regionIndex = regions.findIndex(x=>x.key===key);
-      // UI updates
-      updateTileFor(key);
-      setSelectedRegionChip(key);
-      setTileTargetNearHotspot(key);
-      // Start tile at hotspot position for a fluid entrance
-      const p = projectLatLon(r.lat, r.lon);
-      tileX = p.x; tileY = p.y; tileScale = 0.92; targetScale = 1.0;
-      showTileWithHue();
-      addon.classList.add('show');
-      log('focus', key);
     }
 
     // Plan selection inside tile
@@ -437,9 +416,7 @@
       drawStars(window.scrollY * -0.15);
       placeHotspots();
 
-      // Update tile target to keep following the active hotspot
-      const current = regions[regionIndex];
-      setTileTargetNearHotspot(current.key);
+      // Move tile toward the center target smoothly
       tileX += (targetTileX - tileX) * 0.16;
       tileY += (targetTileY - tileY) * 0.16;
       tileScale += (targetScale - tileScale) * 0.16;
