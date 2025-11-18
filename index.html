@@ -40,7 +40,7 @@
     @keyframes pulse{0%{transform:scale(0.9); opacity:.9} 70%{transform:scale(1.3); opacity:0} 100%{opacity:0}}
 
     /* Floating plan tile (centered) */
-    .tile{position:fixed; z-index:4; min-width:280px; max-width:360px; background:rgba(26,26,26,.94); border:1px solid var(--ring); border-radius:16px; padding:12px; box-shadow:0 18px 56px rgba(0,0,0,.55); left:50%; top:50%; transform:translate(-50%,-50%) scale(.92); opacity:0; pointer-events:none; transition:opacity .22s ease, background .35s ease, box-shadow .35s ease; color:#fff}
+    .tile{position:fixed; z-index:4; min-width:280px; max-width:380px; background:rgba(26,26,26,.94); border:1px solid var(--ring); border-radius:16px; padding:12px; box-shadow:0 18px 56px rgba(0,0,0,.55); left:50%; top:50%; transform:translate(-50%,-50%) scale(.92); opacity:0; pointer-events:none; transition:opacity .22s ease, background .35s ease, box-shadow .35s ease; color:#fff}
     .tile.show{opacity:1; pointer-events:auto}
     .tile.appear{background:linear-gradient(180deg, rgba(255,107,53,.14), rgba(26,26,26,.94)); box-shadow:0 24px 80px rgba(255,107,53,.20), 0 18px 56px rgba(0,0,0,.55)}
     .tile h4{margin:0 0 4px 0; font-size:16px; color:var(--orange)}
@@ -55,9 +55,16 @@
     .tile .mini{font-size:11px; color:#fff; margin-top:8px}
     .tile .countries{display:flex; flex-wrap:wrap; gap:6px 8px; margin-top:10px}
     .tile .badge{font-size:11px; color:#fff; background:#151515; border:1px solid #2a2a2a; padding:4px 8px; border-radius:999px}
+    .tile .add-people{margin-top:12px; padding:10px 12px; border-radius:12px; background:#101010; border:1px solid #242424}
+    .tile .add-people .row{display:flex; align-items:center; justify-content:space-between; gap:10px}
+    .tile .add-people label{font-size:13px; font-weight:800}
+    .tile .add-people .fee{font-size:12px; color:var(--muted)}
+    .tile .add-people input[type=range]{width:100%; accent-color:var(--teal)}
+    .tile .add-people .tot{display:flex; align-items:center; justify-content:space-between; margin-top:6px; font-weight:800}
+    .tile .add-people .tot .val{color:var(--orange)}
 
-    /* Add-on title (left side, slide in from right) */
-    .addon{position:fixed; left:14px; top:50%; transform:translateY(-50%) translateX(0); z-index:4; background:linear-gradient(90deg, rgba(0,169,157,.18), rgba(0,169,157,.06)); border:1px solid rgba(0,169,157,.25); color:#c8fffa; border-radius:14px; padding:12px 14px; min-width:260px; max-width:340px; filter:drop-shadow(0 10px 30px rgba(0,169,157,.15)); opacity:1}
+    /* Add-on title (left side) — moved below to avoid overlap */
+    .addon{position:fixed; left:18px; bottom:120px; top:auto; transform:none; z-index:4; background:linear-gradient(90deg, rgba(0,169,157,.18), rgba(0,169,157,.06)); border:1px solid rgba(0,169,157,.25); color:#c8fffa; border-radius:14px; padding:12px 14px; min-width:260px; max-width:360px; filter:drop-shadow(0 10px 30px rgba(0,169,157,.15)); opacity:1}
 
     /* Region list (right) — larger tiles */
     .regions{position:fixed; right:14px; top:50%; transform:translateY(-50%); z-index:5; display:flex; flex-direction:column; gap:14px; width:min(44vw,320px)}
@@ -105,9 +112,10 @@
       .header{max-width:min(70vw, 560px)}
       .logo-stack .dura{font-size:clamp(34px, 8vw, 72px)}
       .logo-stack .sim{font-size:clamp(30px, 7.2vw, 64px)}
+      .addon{left:14px; bottom:130px; max-width:70vw}
     }
     @media (max-width: 820px){
-      .addon{left:14px; top:auto; bottom:140px;} 
+      .addon{left:14px; bottom:140px;} 
     }
   </style>
 </head>
@@ -166,11 +174,21 @@
       </div>
       <div class="countries" id="tileCountries"></div>
       <div class="mini" id="tileTag">Covers key destinations across APAC.</div>
+
+      <!-- Add additional people slider -->
+      <div class="add-people" aria-label="Add additional people">
+        <div class="row">
+          <label for="addCount">Add additional people</label>
+          <span class="fee" id="feeCopy">£10 each</span>
+        </div>
+        <input id="addCount" type="range" min="0" max="10" step="1" value="0" />
+        <div class="tot"><span><span id="addCountVal">0</span> added</span><span class="val" id="addTotal">+ £0</span></div>
+      </div>
     </div>
   </div>
 
   <!-- Add-on title (left) -->
-  <div id="addon" class="addon">Add additional people to your group plan for £xx each.</div>
+  <div id="addon" class="addon">Add additional people to your group plan. £10 each.</div>
 
   <!-- Regions (right, static) -->
   <div id="regions" class="regions" aria-label="Available regions">
@@ -229,7 +247,7 @@
     const amb = new THREE.AmbientLight(0xffffff, 0.65); scene.add(amb);
     const dir = new THREE.DirectionalLight(0xffffff, 1.0); dir.position.set(5,3,5); scene.add(dir);
 
-    // Earth texture
+    // Earth base
     const loader = new THREE.TextureLoader();
     const TEX_URL = 'https://unpkg.com/three@0.158.0/examples/textures/land_ocean_ice_cloud_2048.jpg';
     const earthGeo = new THREE.SphereGeometry(RADIUS, 96, 96);
@@ -246,9 +264,8 @@
     const OVERLAY_RADIUS = RADIUS*1.004;
 
     function uvFromLatLon(lat, lon){
-      // lat [-90,90], lon [-180,180]
-      const u = (lon + 180) / 360; // 0..1
-      const v = 1 - (lat + 90) / 180; // 0..1
+      const u = (lon + 180) / 360;
+      const v = 1 - (lat + 90) / 180;
       return {u, v};
     }
 
@@ -325,16 +342,12 @@
           }
 
           void main(){
-            float maskA = texture2D(uMask, vUv).a; // line alpha
-            // Always-visible teal outline
+            float maskA = texture2D(uMask, vUv).a;
             vec3 col = uTeal * maskA * uTealIntensity;
-
-            // Soft orange glow centered at selected lat/lon when this overlay is selected
             vec3 selDir = dirFromLatLon(uSelLat, uSelLon);
             float angle = acos(clamp(dot(normalize(vNormal), selDir), -1.0, 1.0));
             float glow = exp(-pow(angle / uOrangeWidth, 2.0));
             col += uOrange * glow * maskA * uOrangeIntensity * (0.6 + uPlanBoost) * uSelected;
-
             gl_FragColor = vec4(col, uOpacity * clamp(maskA * (0.6 + glow*0.8*uSelected), 0.0, 1.0));
           }
         `,
@@ -384,6 +397,19 @@
     const tileTag = document.getElementById('tileTag');
     const tileCountries = document.getElementById('tileCountries');
     const addon = document.getElementById('addon');
+
+    // Add-people slider logic
+    const ADDON_FEE = 10; // £ per additional person
+    const addCountEl = document.getElementById('addCount');
+    const addCountVal = document.getElementById('addCountVal');
+    const addTotal = document.getElementById('addTotal');
+    const feeCopy = document.getElementById('feeCopy');
+    function updateAddPeople(){
+      const n = parseInt(addCountEl.value, 10) || 0;
+      addCountVal.textContent = n;
+      addTotal.textContent = `+ £${n*ADDON_FEE}`;
+      feeCopy.textContent = `£${ADDON_FEE} each`;
+    }
 
     // Floating tile behavior — center of viewport
     let tileX = window.innerWidth/2, tileY = window.innerHeight/2; // current
@@ -489,6 +515,10 @@
       });
     });
 
+    // Add-people slider events
+    addCountEl.addEventListener('input', updateAddPeople);
+    updateAddPeople();
+
     // Region list interactions (right)
     const regionEls = Array.from(document.querySelectorAll('.region'));
     function setSelectedRegionChip(key){
@@ -569,7 +599,6 @@
     document.getElementById('heroText').classList.add('show');
     setTimeout(()=>addon.classList.add('show'), 400);
     // Seed overlays with initial selection
-    updateOverlaySelection('asia');
     focusRegion('asia');
     animate();
   })();
