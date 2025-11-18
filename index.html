@@ -271,7 +271,7 @@
     const loader = new THREE.TextureLoader();
     const TEX_URL = 'https://unpkg.com/three@0.158.0/examples/textures/land_ocean_ice_cloud_2048.jpg';
     const earthGeo = new THREE.SphereGeometry(RADIUS, 96, 96);
-    const earthMat = new THREE.MeshPhongMaterial({ map: loader.load(TEX_URL), shininess: 8 });
+    const earthMat = new THREE.MeshPhongMaterial({ shininess: 8 });
     const earth = new THREE.Mesh(earthGeo, earthMat); scene.add(earth);
 
     // Atmosphere
@@ -588,47 +588,37 @@
       }
     }
 
-    // Animation loop
-    function animate(){
-      const snap = Math.round(targetYaw/STEP)*STEP; if(Math.abs(targetYaw-snap) < (5*Math.PI/180)) targetYaw = snap;
-      yaw += (targetYaw - yaw) * 0.07;
-      pitch += (targetPitch - pitch) * 0.07;
-      earth.rotation.y = yaw; earth.rotation.x = pitch; atmo.rotation.copy(earth.rotation);
-      overlays.forEach(m=> m.rotation.copy(earth.rotation));
-
-      // Decay planBoost
-      planBoost += (0 - planBoost) * 0.06;
-      overlays.forEach(m=>{ m.userData.uniforms.uPlanBoost.value = planBoost; });
-
-      renderer.render(scene, camera);
-      drawStars(window.scrollY * -0.15);
-      placeHotspots();
-
-      // Move tile toward the center target smoothly
-      tileX += (targetTileX - tileX) * 0.16;
-      tileY += (targetTileY - tileY) * 0.16;
-      tileScale += (targetScale - tileScale) * 0.16;
-      tile.style.left = tileX + 'px';
-      tile.style.top  = tileY + 'px';
-      tile.style.transform = `translate(-50%, -50%) scale(${tileScale})`;
-
-      requestAnimationFrame(animate);
+    // Splash dismissal controller tied to globe texture
+    const splashStart = performance.now();
+    const MIN_SPLASH_MS = 700; // avoid flash for fast caches
+    let splashDone = false;
+    function dismissSplash(){
+      if (splashDone) return; splashDone = true;
+      const elapsed = performance.now() - splashStart;
+      const wait = Math.max(0, MIN_SPLASH_MS - elapsed);
+      setTimeout(()=>{
+        splash.classList.add('hide');
+        setTimeout(()=>{
+          splash.remove();
+          document.getElementById('heroText').classList.add('show');
+          setTimeout(()=>addon.classList.add('show'), 400);
+        }, 650);
+      }, wait);
     }
 
-    // Init
-    window.addEventListener('resize', resize); resize();
-    // Delay hero/show until splash dismisses
-    setTimeout(()=>{
-      splash.classList.add('hide');
-      setTimeout(()=>{
-        splash.remove();
-        document.getElementById('heroText').classList.add('show');
-        setTimeout(()=>addon.classList.add('show'), 400);
-      }, 650);
-    }, 1200);
+    // Load earth texture and then dismiss splash when ready
+    loader.load(
+      TEX_URL,
+      (tex)=>{ earthMat.map = tex; earthMat.needsUpdate = true; log('tex','loaded'); dismissSplash(); },
+      undefined,
+      (err)=>{ console.warn('Texture load failed; proceeding sans map', err); dismissSplash(); }
+    );
 
     // Seed overlays with initial selection
     focusRegion('asia');
+
+    // Init
+    window.addEventListener('resize', resize); resize();
     animate();
   })();
   </script>
