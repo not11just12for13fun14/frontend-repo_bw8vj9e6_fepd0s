@@ -229,11 +229,9 @@
     const amb = new THREE.AmbientLight(0xffffff, 0.65); scene.add(amb);
     const dir = new THREE.DirectionalLight(0xffffff, 1.0); dir.position.set(5,3,5); scene.add(dir);
 
-    // Earth base texture
+    // Earth texture
     const loader = new THREE.TextureLoader();
     const TEX_URL = 'https://unpkg.com/three@0.158.0/examples/textures/land_ocean_ice_cloud_2048.jpg';
-    const NORMAL_URL = 'https://unpkg.com/three@0.158.0/examples/textures/planets/earth_normal_2048.jpg';
-
     const earthGeo = new THREE.SphereGeometry(RADIUS, 96, 96);
     const earthMat = new THREE.MeshPhongMaterial({ map: loader.load(TEX_URL), shininess: 8 });
     const earth = new THREE.Mesh(earthGeo, earthMat); scene.add(earth);
@@ -243,97 +241,129 @@
     const atmoMat = new THREE.MeshBasicMaterial({ color: 0xFF6B35, transparent:true, opacity:0.08, blending: THREE.AdditiveBlending });
     const atmo = new THREE.Mesh(atmoGeo, atmoMat); scene.add(atmo);
 
-    // Topography + region glow overlay (shader)
-    const topoGeo = new THREE.SphereGeometry(RADIUS*1.005, 96, 96);
-    const topoUniforms = {
-      uNormalMap: { value: loader.load(NORMAL_URL) },
-      uTeal:   { value: new THREE.Color(0x00A99D) },
-      uOrange: { value: new THREE.Color(0xFF6B35) },
-      uSelLat: { value: 0.0 },   // radians
-      uSelLon: { value: 0.0 },   // radians
-      uTealIntensity: { value: 0.16 },
-      uOrangeIntensity: { value: 0.85 },
-      uOrangeWidth: { value: 0.45 }, // radians falloff width
-      uOpacity: { value: 1.0 }
-    };
+    // Region outline overlays (teal lines, orange glow when selected)
+    const overlays = [];
+    const OVERLAY_RADIUS = RADIUS*1.004;
 
-    const topoMat = new THREE.ShaderMaterial({
-      uniforms: topoUniforms,
-      vertexShader: `
-        varying vec3 vWorldNormal;
-        varying vec2 vUv;
-        void main(){
-          vUv = uv;
-          // World normal aligned with globe rotation
-          vWorldNormal = normalize(normalMatrix * normal);
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: `
-        precision highp float;
-        varying vec3 vWorldNormal;
-        varying vec2 vUv;
-        uniform sampler2D uNormalMap;
-        uniform vec3 uTeal;
-        uniform vec3 uOrange;
-        uniform float uSelLat; // radians
-        uniform float uSelLon; // radians
-        uniform float uTealIntensity;
-        uniform float uOrangeIntensity;
-        uniform float uOrangeWidth;
-        uniform float uOpacity;
-
-        // Convert selected lat/lon to a direction
-        vec3 dirFromLatLon(float lat, float lon){
-          float cl = cos(lat);
-          return normalize(vec3(cl*cos(lon), sin(lat), cl*sin(lon)));
-        }
-
-        void main(){
-          vec3 n = normalize(vWorldNormal);
-
-          // Subtle teal "topography" contour using normal map as a proxy
-          // Sample normal map and derive a thin line pattern
-          vec3 nm = texture2D(uNormalMap, vUv).xyz; // 0..1
-          float height = nm.z; // use blue channel as roughness of terrain
-          float lines = smoothstep(0.48,0.52, fract(height*12.0));
-          float tealMask = mix(0.0, 1.0, lines);
-
-          // Region orange glow as gentle Gaussian around selected direction
-          vec3 selDir = dirFromLatLon(uSelLat, uSelLon);
-          float angle = acos(clamp(dot(n, selDir), -1.0, 1.0));
-          float glow = exp(-pow(angle / uOrangeWidth, 2.0));
-
-          vec3 color = vec3(0.0);
-          color += uTeal * tealMask * uTealIntensity; // teal contours when not selected
-          color += uOrange * glow * uOrangeIntensity; // soft orange glow on selected region
-
-          gl_FragColor = vec4(color, uOpacity * (tealMask * 0.6 + glow));
-        }
-      `,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      transparent: true
-    });
-    const topo = new THREE.Mesh(topoGeo, topoMat); scene.add(topo);
-
-    // Resize
-    function resize(){
-      const w = window.innerWidth, h = window.innerHeight;
-      stars.width = w; stars.height = h;
-      renderer.setSize(w, h, false);
-      camera.aspect = w/h; camera.updateProjectionMatrix();
-      drawStars(0);
-      // Keep the tile target centered on resize
-      setTileTargetCenter();
+    function uvFromLatLon(lat, lon){
+      // lat [-90,90], lon [-180,180]
+      const u = (lon + 180) / 360; // 0..1
+      const v = 1 - (lat + 90) / 180; // 0..1
+      return {u, v};
     }
+
+    function makeMaskTexture(polys){
+      const w = 2048, h = 1024;
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h; const ctx = c.getContext('2d');
+      ctx.clearRect(0,0,w,h);
+      ctx.strokeStyle = '#00A99D';
+      ctx.lineWidth = 2.0; ctx.globalAlpha = 1.0;
+      ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      polys.forEach(poly=>{
+        ctx.beginPath();
+        poly.forEach((pt, i)=>{
+          const uv = uvFromLatLon(pt[1], pt[0]);
+          const x = uv.u * w; const y = uv.v * h;
+          if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        });
+        ctx.stroke();
+      });
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.needsUpdate = true;
+      return tex;
+    }
+
+    function createRegionOverlay({key, polys}){
+      const mask = makeMaskTexture(polys);
+      const geo = new THREE.SphereGeometry(OVERLAY_RADIUS, 96, 96);
+      const uniforms = {
+        uMask: { value: mask },
+        uTeal: { value: new THREE.Color(0x00A99D) },
+        uOrange: { value: new THREE.Color(0xFF6B35) },
+        uSelLat: { value: 0.0 },
+        uSelLon: { value: 0.0 },
+        uSelected: { value: 0.0 },
+        uPlanBoost: { value: 0.0 },
+        uTealIntensity: { value: 0.9 },
+        uOrangeIntensity: { value: 0.85 },
+        uOrangeWidth: { value: 0.55 },
+        uOpacity: { value: 1.0 }
+      };
+      const mat = new THREE.ShaderMaterial({
+        uniforms,
+        vertexShader: `
+          varying vec2 vUv;
+          varying vec3 vNormal;
+          void main(){
+            vUv = uv;
+            vNormal = normalize(normalMatrix * normal);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+          }
+        `,
+        fragmentShader: `
+          precision highp float;
+          varying vec2 vUv;
+          varying vec3 vNormal;
+          uniform sampler2D uMask;
+          uniform vec3 uTeal;
+          uniform vec3 uOrange;
+          uniform float uSelLat; // radians
+          uniform float uSelLon; // radians
+          uniform float uSelected;
+          uniform float uPlanBoost;
+          uniform float uTealIntensity;
+          uniform float uOrangeIntensity;
+          uniform float uOrangeWidth;
+          uniform float uOpacity;
+
+          vec3 dirFromLatLon(float lat, float lon){
+            float cl = cos(lat);
+            return normalize(vec3(cl*cos(lon), sin(lat), cl*sin(lon)));
+          }
+
+          void main(){
+            float maskA = texture2D(uMask, vUv).a; // line alpha
+            // Always-visible teal outline
+            vec3 col = uTeal * maskA * uTealIntensity;
+
+            // Soft orange glow centered at selected lat/lon when this overlay is selected
+            vec3 selDir = dirFromLatLon(uSelLat, uSelLon);
+            float angle = acos(clamp(dot(normalize(vNormal), selDir), -1.0, 1.0));
+            float glow = exp(-pow(angle / uOrangeWidth, 2.0));
+            col += uOrange * glow * maskA * uOrangeIntensity * (0.6 + uPlanBoost) * uSelected;
+
+            gl_FragColor = vec4(col, uOpacity * clamp(maskA * (0.6 + glow*0.8*uSelected), 0.0, 1.0));
+          }
+        `,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        transparent: true
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.userData = { key, uniforms };
+      scene.add(mesh);
+      overlays.push(mesh);
+    }
+
+    // Rough region polygons (lon, lat)
+    const polysEurope = [[[-10,35],[40,35],[40,70],[-10,70],[-10,35]]];
+    const polysSEA = [[[95,-10],[140,-10],[140,25],[95,25],[95,-10]]];
+    const polysAmericas = [[[-170,-60],[-30,-60],[-30,70],[-170,70],[-170,-60]]];
+
+    createRegionOverlay({ key:'europe', polys: polysEurope });
+    createRegionOverlay({ key:'asia', polys: polysSEA });
+    createRegionOverlay({ key:'americas', polys: polysAmericas });
 
     // Regions
     const regions = [
-      { key:'asia',     name:'Asia',     lat:  1.3, lon: 103.8, tag:'Covers key destinations across APAC.', countries:['Japan','Singapore','Thailand','Vietnam','Indonesia','Malaysia','South Korea','Philippines'] },
-      { key:'europe',   name:'Europe',   lat: 50.1, lon:   8.6, tag:'Works across the EU and UK.', countries:['United Kingdom','Germany','France','Spain','Italy','Netherlands','Sweden','Portugal'] },
-      { key:'americas', name:'Americas', lat: 19.4, lon: -99.1, tag:'From Canada to Argentina.', countries:['United States','Canada','Mexico','Brazil','Argentina','Chile','Peru','Colombia'] }
+      { key:'asia',     name:'Southeast Asia', lat:  7.0, lon: 110.0, tag:'Covers key destinations across SE Asia.', countries:['Singapore','Thailand','Vietnam','Malaysia','Indonesia','Philippines','Cambodia','Laos'] },
+      { key:'europe',   name:'Europe',         lat: 54.0, lon:  15.0, tag:'Works across the EU and UK.', countries:['United Kingdom','Germany','France','Spain','Italy','Netherlands','Sweden','Portugal'] },
+      { key:'americas', name:'Americas',       lat: 15.0, lon: -80.0, tag:'From Canada to Argentina.', countries:['United States','Canada','Mexico','Brazil','Argentina','Chile','Peru','Colombia'] }
     ];
+
     function yawPitchFor(lat,lon){
       const toRad = Math.PI/180;
       const yaw = -lon*toRad;
@@ -360,17 +390,18 @@
     let targetTileX = tileX, targetTileY = tileY; // target
     let tileScale = 0.92, targetScale = 1.0;
 
+    // Plan boost for glow
+    let planBoost = 0.0;
+
     function updateTileFor(key){
       const r = regions.find(x=>x.key===key); if(!r) return;
       tileTitle.textContent = r.name;
       tileTag.textContent = r.tag;
-      // Countries
       tileCountries.innerHTML = '';
       r.countries.forEach(c=>{
         const span = document.createElement('span');
         span.className = 'badge'; span.textContent = c; tileCountries.appendChild(span);
       });
-      // Reset selected plan state
       tile.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel'));
     }
 
@@ -386,25 +417,31 @@
       showTileWithHue._t = setTimeout(()=> tile.classList.remove('appear'), 650);
     }
 
+    function updateOverlaySelection(selKey){
+      const r = regions.find(x=>x.key===selKey); if(!r) return;
+      overlays.forEach(m=>{
+        const u = m.userData.uniforms;
+        u.uSelLat.value = r.lat * Math.PI/180;
+        u.uSelLon.value = r.lon * Math.PI/180;
+        u.uSelected.value = (m.userData.key === selKey) ? 1.0 : 0.0;
+      });
+    }
+
     function focusRegion(key){
       const r = regions.find(x=>x.key===key);
       if(!r) return;
       const t = yawPitchFor(r.lat, r.lon);
-      targetYaw = Math.round(t.yaw/STEP)*STEP; // snap yaw to 30°
+      targetYaw = Math.round(t.yaw/STEP)*STEP;
       targetPitch = t.pitch;
       regionIndex = regions.findIndex(x=>x.key===key);
-      // UI updates
       updateTileFor(key);
       setSelectedRegionChip(key);
-      // Start tile at hotspot position for a fluid entrance, then move to center
       const p = projectLatLon(r.lat, r.lon);
       tileX = p.x; tileY = p.y; tileScale = 0.92; targetScale = 1.0;
       setTileTargetCenter();
       showTileWithHue();
       addon.classList.add('show');
-      // Update shader selected lat/lon (radians)
-      topoUniforms.uSelLat.value = r.lat * Math.PI/180;
-      topoUniforms.uSelLon.value = r.lon * Math.PI/180;
+      updateOverlaySelection(key);
       log('focus', key);
     }
 
@@ -447,13 +484,9 @@
         tile.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel'));
         opt.classList.add('sel');
         const region = regions[regionIndex].key;
+        planBoost = 0.7; // spike glow briefly
         log('plan-select', {region, plan: opt.dataset.plan});
       });
-    });
-
-    // Hotspot clicks focus region
-    Object.entries(hs).forEach(([key,el])=>{
-      el.addEventListener('click', ()=>{ focusRegion(key); });
     });
 
     // Region list interactions (right)
@@ -463,6 +496,11 @@
     }
     regionEls.forEach(el=>{
       el.addEventListener('click', ()=>{ focusRegion(el.dataset.key); });
+    });
+
+    // Hotspot clicks focus region
+    Object.entries(hs).forEach(([key,el])=>{
+      el.addEventListener('click', ()=>{ focusRegion(key); });
     });
 
     // Header/nav
@@ -476,6 +514,16 @@
     document.getElementById('invite').addEventListener('click', ()=>{ share.classList.add('open'); log('referral','open'); });
     share.addEventListener('click', (e)=>{ if(e.target===share){ share.classList.remove('open'); log('referral','close-backdrop'); } });
     document.getElementById('copy').addEventListener('click', ()=>{ const v = document.getElementById('refLink').value; navigator.clipboard && navigator.clipboard.writeText(v); log('referral','copy', v); });
+
+    // Resize
+    function resize(){
+      const w = window.innerWidth, h = window.innerHeight;
+      stars.width = w; stars.height = h;
+      renderer.setSize(w, h, false);
+      camera.aspect = w/h; camera.updateProjectionMatrix();
+      drawStars(0);
+      setTileTargetCenter();
+    }
 
     // Stars draw
     function drawStars(offsetY){
@@ -494,7 +542,12 @@
       const snap = Math.round(targetYaw/STEP)*STEP; if(Math.abs(targetYaw-snap) < (5*Math.PI/180)) targetYaw = snap;
       yaw += (targetYaw - yaw) * 0.07;
       pitch += (targetPitch - pitch) * 0.07;
-      earth.rotation.y = yaw; earth.rotation.x = pitch; atmo.rotation.copy(earth.rotation); topo.rotation.copy(earth.rotation);
+      earth.rotation.y = yaw; earth.rotation.x = pitch; atmo.rotation.copy(earth.rotation);
+      overlays.forEach(m=> m.rotation.copy(earth.rotation));
+
+      // Decay planBoost
+      planBoost += (0 - planBoost) * 0.06;
+      overlays.forEach(m=>{ m.userData.uniforms.uPlanBoost.value = planBoost; });
 
       renderer.render(scene, camera);
       drawStars(window.scrollY * -0.15);
@@ -515,9 +568,8 @@
     window.addEventListener('resize', resize); resize();
     document.getElementById('heroText').classList.add('show');
     setTimeout(()=>addon.classList.add('show'), 400);
-    // Seed selected uniform before first focus
-    topoUniforms.uSelLat.value = regions[0].lat * Math.PI/180;
-    topoUniforms.uSelLon.value = regions[0].lon * Math.PI/180;
+    // Seed overlays with initial selection
+    updateOverlaySelection('asia');
     focusRegion('asia');
     animate();
   })();
