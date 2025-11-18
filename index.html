@@ -44,9 +44,9 @@
     .hotspot::after{content:""; position:absolute; inset:-8px; border-radius:inherit; border:1px solid rgba(255,107,53,.5); animation:pulse 1.8s infinite ease-out}
     @keyframes pulse{0%{transform:scale(0.9); opacity:.9} 70%{transform:scale(1.3); opacity:0} 100%{opacity:0}}
 
-    /* Floating plan tile (near focused region) */
-    .tile{position:fixed; z-index:4; min-width:280px; max-width:340px; background:rgba(26,26,26,.92); border:1px solid var(--ring); border-radius:16px; padding:12px; box-shadow:0 18px 56px rgba(0,0,0,.55); transform:translate(-50%,-50%) scale(.96); opacity:0; pointer-events:none; transition:opacity .18s ease, transform .18s ease}
-    .tile.show{opacity:1; transform:translate(var(--tx,-50%), var(--ty,-50%)) scale(1); pointer-events:auto}
+    /* Floating plan tile (centered on focus) */
+    .tile{position:fixed; z-index:4; min-width:280px; max-width:360px; background:rgba(26,26,26,.94); border:1px solid var(--ring); border-radius:16px; padding:12px; box-shadow:0 18px 56px rgba(0,0,0,.55); left:50%; top:50%; transform:translate(-50%,-50%) scale(.96); opacity:0; pointer-events:none; transition:opacity .18s ease, transform .18s ease}
+    .tile.show{opacity:1; transform:translate(-50%,-50%) scale(1); pointer-events:auto}
     .tile h4{margin:0 0 4px 0; font-size:16px}
     .tile .muted{color:var(--muted); font-size:12px}
     .tile .options{display:grid; gap:8px; margin-top:10px}
@@ -58,6 +58,9 @@
     .tile .mini{font-size:11px; color:#cfcfcf; margin-top:8px}
     .tile .countries{display:flex; flex-wrap:wrap; gap:6px 8px; margin-top:10px}
     .tile .badge{font-size:11px; color:#d8d8d8; background:#151515; border:1px solid #2a2a2a; padding:4px 8px; border-radius:999px}
+
+    /* Soft connector arrow */
+    .connector{position:fixed; inset:0; z-index:4; pointer-events:none}
 
     /* Add-on title (left side, slide in from right) */
     .addon{position:fixed; left:14px; top:50%; transform:translateY(-50%) translateX(30px); z-index:4; background:linear-gradient(90deg, rgba(0,169,157,.18), rgba(0,169,157,.06)); border:1px solid rgba(0,169,157,.25); color:#c8fffa; border-radius:14px; padding:12px 14px; min-width:240px; max-width:320px; filter:drop-shadow(0 10px 30px rgba(0,169,157,.15)); opacity:0; transition:transform .45s cubic-bezier(.2,.8,.2,1), opacity .45s ease}
@@ -98,8 +101,6 @@
       .text-block{left:14px; right:14px; bottom:84px}
     }
     @media (max-width: 820px){
-      .tile{left:50% !important; top:auto !important; bottom:84px !important; transform:translate(-50%,0) scale(.96)}
-      .tile.show{transform:translate(-50%,0) scale(1)}
       .addon{left:14px; top:auto; bottom:140px; transform:translateX(30px);}
       .addon.show{transform:translateX(0)}
     }
@@ -152,6 +153,16 @@
       <div class="mini" id="tileTag">Covers key destinations across APAC.</div>
     </div>
   </div>
+
+  <!-- Soft connector arrow -->
+  <svg id="connector" class="connector" viewBox="0 0 100 100" preserveAspectRatio="none">
+    <defs>
+      <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto-start-reverse">
+        <path d="M0,0 L6,3 L0,6 Z" fill="rgba(255,107,53,.8)" />
+      </marker>
+    </defs>
+    <path id="connectorPath" d="M0 0 C 25 25, 75 75, 100 100" stroke="rgba(255,107,53,.55)" stroke-width="2" fill="none" marker-end="url(#arrowhead)" />
+  </svg>
 
   <!-- Add-on title (left) -->
   <div id="addon" class="addon">Add additional people to your group plan for £xx each.</div>
@@ -269,6 +280,10 @@
     const tileCountries = document.getElementById('tileCountries');
     const addon = document.getElementById('addon');
 
+    // Connector
+    const connector = document.getElementById('connector');
+    const connectorPath = document.getElementById('connectorPath');
+
     // Scroll navigate regions
     function stepToRegion(dir){
       regionIndex = (regionIndex + (dir>0?1:-1) + regions.length) % regions.length;
@@ -330,36 +345,40 @@
       // Reset selected plan state
       tile.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel'));
     }
-    function positionTileAt(key){
+
+    // Center tile always
+    function positionTileCenter(){
+      if(!tile.classList.contains('show')) tile.classList.add('show');
+    }
+
+    // Draw connector from hotspot to tile center
+    function drawConnectorTo(key){
       const r = regions.find(x=>x.key===key); if(!r) return;
       const p = projectLatLon(r.lat, r.lon);
-      // Offset tile so it appears above-right of hotspot, but keep on-screen
-      const offsetX = 60; const offsetY = -60;
-      let tx = p.x + offsetX; let ty = p.y + offsetY;
       const w = window.innerWidth, h = window.innerHeight;
-      const pad = 12;
-      tx = Math.max(pad, Math.min(w - pad, tx));
-      ty = Math.max(pad, Math.min(h - pad - 84, ty));
-      tile.style.left = tx + 'px';
-      tile.style.top  = ty + 'px';
-      // CSS var tweak for initial transform pop
-      tile.style.setProperty('--tx','-50%');
-      tile.style.setProperty('--ty','-50%');
-      if(!tile.classList.contains('show')){
-        tile.classList.add('show');
-      }
+      // Tile center is viewport center (50%,50%)
+      const tx = w/2, ty = h/2;
+      // Build an SVG path in absolute px, but our viewBox is dynamic
+      connector.setAttribute('viewBox', `0 0 ${w} ${h}`);
+      const dx = (tx - p.x) * 0.4; // control point pull
+      const dy = (ty - p.y) * 0.4;
+      const c1x = p.x + dx, c1y = p.y;
+      const c2x = tx - dx, c2y = ty - dy;
+      const d = `M ${p.x} ${p.y} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${tx} ${ty}`;
+      connectorPath.setAttribute('d', d);
+      connectorPath.style.opacity = p.visible ? 1 : 0.25;
     }
 
     function focusRegion(key){
       const r = regions.find(x=>x.key===key);
       if(!r) return;
       const t = yawPitchFor(r.lat, r.lon);
-      targetYaw = Math.round(t.yaw/STEP)*STEP;
-      targetPitch = t.pitch;
+      targetYaw = Math.round(t.yaw/STEP)*STEP; // snap yaw to 30°
+      targetPitch = t.pitch; // keep pitch smooth for centering
       regionIndex = regions.findIndex(x=>x.key===key);
       // UI updates
       updateTileFor(key);
-      positionTileAt(key);
+      positionTileCenter();
       setSelectedRegionChip(key);
       addon.classList.add('show'); // reveal add-on title (slides in from right)
       log('focus', key);
@@ -425,9 +444,9 @@
       drawStars(window.scrollY * -0.15);
       placeHotspots();
 
-      // Keep tile near current region
+      // Draw soft connector from current region's hotspot to centered tile
       const current = regions[regionIndex];
-      positionTileAt(current.key);
+      drawConnectorTo(current.key);
 
       // Infer closest region by yaw to keep logs in sync
       let minD = 1e9, idx=0; regions.forEach((r,i)=>{ const ty = yawPitchFor(r.lat, r.lon).yaw; const d = Math.abs(((yaw-ty+Math.PI*3)%(Math.PI*2))-Math.PI); if(d<minD){minD=d; idx=i;} });
@@ -442,6 +461,8 @@
     document.getElementById('heroText').classList.add('show');
     setTimeout(()=>addon.classList.add('show'), 400);
     focusRegion('asia');
+    // Ensure tile visible initially
+    positionTileCenter();
     animate();
   })();
   </script>
