@@ -25,20 +25,14 @@
     #stars{position:fixed; inset:0; z-index:0; pointer-events:none}
 
     /* Header + Large Logo */
-    .header{position:fixed; top:18px; left:18px; z-index:5; display:flex; flex-direction:column; align-items:flex-start; gap:10px}
+    .header{position:fixed; top:18px; left:18px; z-index:5; display:flex; flex-direction:column; align-items:flex-start; gap:12px; max-width:min(46vw, 600px)}
     .logo-stack{pointer-events:none; line-height:.9}
     .logo-stack .dura{display:block; font-weight:900; font-size:clamp(40px, 7vw, 112px); color:var(--orange); letter-spacing:-0.5px; text-shadow:0 10px 30px rgba(255,107,53,.15)}
-    .logo-stack .sim{display:block; font-weight:900; font-size:clamp(36px, 6.2vw, 96px); color:#ffffff; margin-left:14%; letter-spacing:-0.5px}
-    .burger{appearance:none; background:rgba(255,255,255,.06); color:#fff; border:1px solid rgba(255,255,255,.08); padding:8px 10px; border-radius:10px; cursor:pointer; backdrop-filter:blur(6px); transition:transform .2s ease; pointer-events:auto}
-    .burger:hover{transform:translateY(-1px)}
+    .logo-stack .sim{display:block; font-weight:900; font-size:clamp(36px, 6.2vw, 96px); color:var(--teal); margin-left:14%; letter-spacing:-0.5px}
 
-    /* Nav overlay */
-    .overlay{position:fixed; inset:0; background:rgba(10,10,10,.7); backdrop-filter:blur(12px); display:grid; place-items:center; opacity:0; pointer-events:none; transition:opacity .25s ease; z-index:10}
-    .overlay.open{opacity:1; pointer-events:auto}
-    .drawer{background:#111; border:1px solid #2a2a2a; width:min(92vw,420px); border-radius:16px; padding:18px; box-shadow:0 40px 120px rgba(0,0,0,.6); transform:translateY(12px); opacity:0; transition:opacity .25s ease, transform .25s ease}
-    .overlay.open .drawer{transform:none; opacity:1}
-    .nav-links{display:grid; gap:12px}
-    .nav-links a{display:block; padding:12px 14px; border-radius:12px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06)}
+    /* Menu tile (top-right) */
+    .menu-tile{position:fixed; top:18px; right:18px; z-index:6; background:var(--teal); color:#0A0A0A; font-weight:900; border-radius:12px; padding:10px 14px; border:1px solid rgba(255,255,255,.08); box-shadow:0 10px 30px rgba(0,169,157,.22); cursor:pointer; backdrop-filter:blur(6px); transition:transform .2s ease, box-shadow .2s ease}
+    .menu-tile:hover{transform:translateY(-1px); box-shadow:0 14px 36px rgba(0,169,157,.28)}
 
     /* Hotspots (globe markers) */
     .hotspot{position:fixed; z-index:3; width:18px; height:18px; border-radius:50%; background:var(--orange); box-shadow:0 0 16px rgba(255,107,53,.85), 0 0 30px rgba(255,107,53,.35) inset; transform:translate(-50%,-50%); pointer-events:auto; opacity:.95}
@@ -56,6 +50,7 @@
     .tile .opt:hover{transform:translateY(-1px)}
     .tile .opt.sel{border-color:rgba(0,169,157,.6); background:#151515}
     .tile .label{font-weight:800; color:var(--orange)}
+    .tile .label .gb{color:var(--teal)}
     .tile .price{color:#fff; font-weight:800}
     .tile .mini{font-size:11px; color:#fff; margin-top:8px}
     .tile .countries{display:flex; flex-wrap:wrap; gap:6px 8px; margin-top:10px}
@@ -73,9 +68,12 @@
     .region.sel .name{color:var(--orange)}
     .region .hint{font-size:14px; color:var(--muted)}
 
-    /* Helper text */
-    .text-block{position:fixed; left:14px; bottom:14px; z-index:4; max-width:44ch; opacity:0; transform:translateY(8px); transition:opacity .6s ease, transform .6s ease}
+    /* Helper text under logo */
+    .text-block{position:relative; z-index:4; max-width:48ch; opacity:0; transform:translateY(8px); transition:opacity .6s ease, transform .6s ease}
     .text-block.show{opacity:1; transform:none}
+    .text-block .kicker{font-size:12px; color:var(--muted); margin-bottom:4px}
+    .text-block .headline{font-size:20px; font-weight:800; line-height:1.1}
+    .text-block .sub{font-size:13px; color:var(--muted); margin-top:6px}
 
     /* Scroll indicator */
     .scroll-ind{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:4; opacity:1; transition:opacity .6s ease}
@@ -97,7 +95,7 @@
     @media (max-width: 900px){
       .regions{right:14px; bottom:84px; top:auto; transform:none; flex-direction:row; overflow:auto; padding-bottom:6px; width:auto}
       .region{min-width:220px}
-      .text-block{left:14px; right:14px; bottom:84px}
+      .header{max-width:min(70vw, 560px)}
       .logo-stack .dura{font-size:clamp(34px, 8vw, 72px)}
       .logo-stack .sim{font-size:clamp(30px, 7.2vw, 64px)}
     }
@@ -110,21 +108,29 @@
   <canvas id="stars" aria-hidden="true"></canvas>
   <div id="three-stage" aria-label="3D globe"></div>
 
-  <!-- Header with large stacked logo + burger -->
+  <!-- Header with large stacked logo and helper copy beneath -->
   <div class="header">
     <div class="logo-stack" aria-label="DuraSim brand">
       <span class="dura">Dura</span>
       <span class="sim">Sim</span>
     </div>
-    <button id="burger" class="burger" aria-label="Open navigation">≡</button>
+    <!-- Helper text under logo -->
+    <div id="heroText" class="text-block">
+      <div class="kicker">Group‑eSIM, simplified</div>
+      <div class="headline">Pick a region on the right. We’ll spin you there.</div>
+      <div class="sub">Buy now — invite friends later. One plan, multiple travelers, on your terms.</div>
+    </div>
   </div>
+
+  <!-- Top-right Menu tile -->
+  <button id="menuTile" class="menu-tile" aria-label="Open navigation">Menu</button>
 
   <!-- Slide-in nav overlay -->
   <div id="navOverlay" class="overlay" aria-hidden="true">
     <div class="drawer">
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px">
         <div style="display:flex; align-items:center; gap:8px"><strong>DuraSim</strong></div>
-        <button id="closeNav" class="burger" aria-label="Close">Close</button>
+        <button id="closeNav" class="menu-tile" style="position:static; padding:8px 12px; border-radius:10px; background:#111; color:#fff; border:1px solid #2a2a2a; box-shadow:none">Close</button>
       </div>
       <nav class="nav-links">
         <a href="#">How it Works</a>
@@ -147,9 +153,9 @@
       <h4 id="tileTitle">Asia</h4>
       <div class="muted">Pick a data plan — add people anytime</div>
       <div class="options">
-        <div class="opt" data-plan="lite"><span class="label">Lite · xxxGB</span><span class="price">£xxx</span></div>
-        <div class="opt" data-plan="prem"><span class="label">Premium · xxxGB</span><span class="price">£xxx</span></div>
-        <div class="opt" data-plan="pro"><span class="label">Pro · xxxGB</span><span class="price">£xxx</span></div>
+        <div class="opt" data-plan="lite"><span class="label"><span class="pname">Lite</span> · <span class="gb">xxxGB</span></span><span class="price">£xxx</span></div>
+        <div class="opt" data-plan="prem"><span class="label"><span class="pname">Premium</span> · <span class="gb">xxxGB</span></span><span class="price">£xxx</span></div>
+        <div class="opt" data-plan="pro"><span class="label"><span class="pname">Pro</span> · <span class="gb">xxxGB</span></span><span class="price">£xxx</span></div>
       </div>
       <div class="countries" id="tileCountries"></div>
       <div class="mini" id="tileTag">Covers key destinations across APAC.</div>
@@ -164,13 +170,6 @@
     <div class="region" data-key="asia"><span class="name">Asia</span><span class="hint">APAC</span></div>
     <div class="region" data-key="europe"><span class="name">Europe</span><span class="hint">EU + UK</span></div>
     <div class="region" data-key="americas"><span class="name">Americas</span><span class="hint">NA + LATAM</span></div>
-  </div>
-
-  <!-- Helper text -->
-  <div id="heroText" class="text-block">
-    <div style="font-size:12px; color:var(--muted); margin-bottom:4px">Group‑eSIM, simplified</div>
-    <div style="font-size:20px; font-weight:800; line-height:1.1">Pick a region on the right. We’ll spin you there.</div>
-    <div style="font-size:13px; color:var(--muted); margin-top:6px">Buy now — invite friends later. One plan, multiple travelers, on your terms.</div>
   </div>
 
   <!-- Scroll indicator -->
@@ -265,7 +264,6 @@
     let targetPitch = yawPitchFor(regions[0].lat, regions[0].lon).pitch;
     let yaw = targetYaw; let pitch = targetPitch;
     let regionIndex = 0;
-    let firstScroll = true;
 
     // UI refs
     const tile = document.getElementById('planTile');
@@ -383,7 +381,7 @@
 
     // Header/nav
     const nav = document.getElementById('navOverlay');
-    document.getElementById('burger').addEventListener('click', ()=>{ nav.classList.add('open'); log('nav','open'); });
+    document.getElementById('menuTile').addEventListener('click', ()=>{ nav.classList.add('open'); log('nav','open'); });
     document.getElementById('closeNav').addEventListener('click', ()=>{ nav.classList.remove('open'); log('nav','close'); });
     nav.addEventListener('click', (e)=>{ if(e.target===nav){ nav.classList.remove('open'); log('nav','close-backdrop'); } });
 
@@ -424,11 +422,6 @@
       tile.style.left = tileX + 'px';
       tile.style.top  = tileY + 'px';
       tile.style.transform = `translate(-50%, -50%) scale(${tileScale})`;
-
-      // Infer closest region by yaw to keep logs in sync
-      let minD = 1e9, idx=0; regions.forEach((r,i)=>{ const ty = yawPitchFor(r.lat, r.lon).yaw; const d = Math.abs(((yaw-ty+Math.PI*3)%(Math.PI*2))-Math.PI); if(d<minD){minD=d; idx=i;} });
-      const key = regions[idx].key;
-      if(key!==lastRegionKey){ log('region', key); lastRegionKey = key; }
 
       requestAnimationFrame(animate);
     }
