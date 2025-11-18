@@ -196,7 +196,7 @@
       <div class="options">
         <div class="opt" data-plan="lite"><span class="label"><span class="pname">Lite</span> · <span class="gb">xxxGB</span></span><span class="price">£xxx</span></div>
         <div class="opt" data-plan="prem"><span class="label"><span class="pname">Premium</span> · <span class="gb">xxxGB</span></span><span class="price">£xxx</span></div>
-        <div class="opt" data-plan="pro"><span class="label"><span class="pname">Pro</span> · <span class="gb">xxxGB</span></span><span class="price">£xxx</span></div>
+        <div class="opt" data-plan="pro"><span class="label"><span class="gb">xxxGB</span></span><span class="price">£xxx</span></div>
       </div>
       <div class="countries" id="tileCountries"></div>
       <div class="mini" id="tileTag">Covers key destinations across APAC.</div>
@@ -246,10 +246,8 @@
     </div>
   </div>
 
-  <!-- Three.js -->
-  <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
-
-  <script>
+  <script type="module">
+  import * as THREE from 'three';
   (function(){
     const log = (...args)=>console.log('[DEBUG]', ...args);
 
