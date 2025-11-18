@@ -91,6 +91,13 @@
     .sheet input{flex:1; padding:10px 12px; border-radius:10px; border:1px solid #2b2b2b; background:#0f0f0f; color:#fff}
     .sheet button{padding:10px 12px; border-radius:10px; border:1px solid #2b2b2b; background:var(--orange); color:#111; font-weight:800; cursor:pointer}
 
+    /* Overlay nav */
+    .overlay{position:fixed; inset:0; z-index:10; background:rgba(0,0,0,.6); opacity:0; pointer-events:none; transition:opacity .2s ease}
+    .overlay.open{opacity:1; pointer-events:auto}
+    .drawer{position:absolute; top:0; right:0; height:100%; width:min(92vw, 420px); background:#0f0f0f; border-left:1px solid #2a2a2a; padding:18px; box-shadow:0 40px 120px rgba(0,0,0,.6)}
+    .nav-links{display:flex; flex-direction:column; gap:10px}
+    .nav-links a{padding:10px 12px; border-radius:10px; border:1px solid #2a2a2a; background:#111; color:#fff}
+
     /* Responsive */
     @media (max-width: 900px){
       .regions{right:14px; bottom:84px; top:auto; transform:none; flex-direction:row; overflow:auto; padding-bottom:6px; width:auto}
@@ -222,9 +229,11 @@
     const amb = new THREE.AmbientLight(0xffffff, 0.65); scene.add(amb);
     const dir = new THREE.DirectionalLight(0xffffff, 1.0); dir.position.set(5,3,5); scene.add(dir);
 
-    // Earth texture
-    const TEX_URL = 'https://unpkg.com/three@0.158.0/examples/textures/land_ocean_ice_cloud_2048.jpg';
+    // Earth base texture
     const loader = new THREE.TextureLoader();
+    const TEX_URL = 'https://unpkg.com/three@0.158.0/examples/textures/land_ocean_ice_cloud_2048.jpg';
+    const NORMAL_URL = 'https://unpkg.com/three@0.158.0/examples/textures/planets/earth_normal_2048.jpg';
+
     const earthGeo = new THREE.SphereGeometry(RADIUS, 96, 96);
     const earthMat = new THREE.MeshPhongMaterial({ map: loader.load(TEX_URL), shininess: 8 });
     const earth = new THREE.Mesh(earthGeo, earthMat); scene.add(earth);
@@ -233,6 +242,80 @@
     const atmoGeo = new THREE.SphereGeometry(RADIUS*1.03, 64, 64);
     const atmoMat = new THREE.MeshBasicMaterial({ color: 0xFF6B35, transparent:true, opacity:0.08, blending: THREE.AdditiveBlending });
     const atmo = new THREE.Mesh(atmoGeo, atmoMat); scene.add(atmo);
+
+    // Topography + region glow overlay (shader)
+    const topoGeo = new THREE.SphereGeometry(RADIUS*1.005, 96, 96);
+    const topoUniforms = {
+      uNormalMap: { value: loader.load(NORMAL_URL) },
+      uTeal:   { value: new THREE.Color(0x00A99D) },
+      uOrange: { value: new THREE.Color(0xFF6B35) },
+      uSelLat: { value: 0.0 },   // radians
+      uSelLon: { value: 0.0 },   // radians
+      uTealIntensity: { value: 0.16 },
+      uOrangeIntensity: { value: 0.85 },
+      uOrangeWidth: { value: 0.45 }, // radians falloff width
+      uOpacity: { value: 1.0 }
+    };
+
+    const topoMat = new THREE.ShaderMaterial({
+      uniforms: topoUniforms,
+      vertexShader: `
+        varying vec3 vWorldNormal;
+        varying vec2 vUv;
+        void main(){
+          vUv = uv;
+          // World normal aligned with globe rotation
+          vWorldNormal = normalize(normalMatrix * normal);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        precision highp float;
+        varying vec3 vWorldNormal;
+        varying vec2 vUv;
+        uniform sampler2D uNormalMap;
+        uniform vec3 uTeal;
+        uniform vec3 uOrange;
+        uniform float uSelLat; // radians
+        uniform float uSelLon; // radians
+        uniform float uTealIntensity;
+        uniform float uOrangeIntensity;
+        uniform float uOrangeWidth;
+        uniform float uOpacity;
+
+        // Convert selected lat/lon to a direction
+        vec3 dirFromLatLon(float lat, float lon){
+          float cl = cos(lat);
+          return normalize(vec3(cl*cos(lon), sin(lat), cl*sin(lon)));
+        }
+
+        void main(){
+          vec3 n = normalize(vWorldNormal);
+
+          // Subtle teal "topography" contour using normal map as a proxy
+          // Sample normal map and derive a thin line pattern
+          vec3 nm = texture2D(uNormalMap, vUv).xyz; // 0..1
+          float height = nm.z; // use blue channel as roughness of terrain
+          float lines = smoothstep(0.48,0.52, fract(height*12.0));
+          float tealMask = mix(0.0, 1.0, lines);
+
+          // Region orange glow as gentle Gaussian around selected direction
+          vec3 selDir = dirFromLatLon(uSelLat, uSelLon);
+          float angle = acos(clamp(dot(n, selDir), -1.0, 1.0));
+          float glow = exp(-pow(angle / uOrangeWidth, 2.0));
+
+          vec3 color = vec3(0.0);
+          color += uTeal * tealMask * uTealIntensity; // teal contours when not selected
+          color += uOrange * glow * uOrangeIntensity; // soft orange glow on selected region
+
+          gl_FragColor = vec4(color, uOpacity * (tealMask * 0.6 + glow));
+        }
+      `,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      transparent: true
+    });
+    const topo = new THREE.Mesh(topoGeo, topoMat); scene.add(topo);
 
     // Resize
     function resize(){
@@ -319,6 +402,9 @@
       setTileTargetCenter();
       showTileWithHue();
       addon.classList.add('show');
+      // Update shader selected lat/lon (radians)
+      topoUniforms.uSelLat.value = r.lat * Math.PI/180;
+      topoUniforms.uSelLon.value = r.lon * Math.PI/180;
       log('focus', key);
     }
 
@@ -404,12 +490,11 @@
     }
 
     // Animation loop
-    let lastRegionKey = '';
     function animate(){
       const snap = Math.round(targetYaw/STEP)*STEP; if(Math.abs(targetYaw-snap) < (5*Math.PI/180)) targetYaw = snap;
       yaw += (targetYaw - yaw) * 0.07;
       pitch += (targetPitch - pitch) * 0.07;
-      earth.rotation.y = yaw; earth.rotation.x = pitch; atmo.rotation.copy(earth.rotation);
+      earth.rotation.y = yaw; earth.rotation.x = pitch; atmo.rotation.copy(earth.rotation); topo.rotation.copy(earth.rotation);
 
       renderer.render(scene, camera);
       drawStars(window.scrollY * -0.15);
@@ -430,6 +515,9 @@
     window.addEventListener('resize', resize); resize();
     document.getElementById('heroText').classList.add('show');
     setTimeout(()=>addon.classList.add('show'), 400);
+    // Seed selected uniform before first focus
+    topoUniforms.uSelLat.value = regions[0].lat * Math.PI/180;
+    topoUniforms.uSelLon.value = regions[0].lon * Math.PI/180;
     focusRegion('asia');
     animate();
   })();
