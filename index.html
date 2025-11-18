@@ -3,459 +3,406 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>DuraSim – Group eSIM Platform</title>
-  <meta name="description" content="DuraSim is the world’s first group eSIM platform—built for travelers, not telecoms." />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>DuraSim — Group eSIM (Dark)</title>
+  <meta name="description" content="DuraSim is the world’s first group‑eSIM platform." />
   <style>
     :root{
-      --teal:#00A99D; /* primary */
-      --orange:#FF6B35; /* accent */
-      --bg:#FAFAFA; /* off-white */
-      --text:#222222; /* charcoal */
-      --muted:#6b7280;
-      --card:#ffffff;
-      --ring: 0 10px 30px rgba(0,0,0,0.08);
+      --bg:#0A0A0A;          /* background */
+      --card:#1A1A1A;        /* cards */
+      --teal:#00A99D;        /* accents */
+      --orange:#FF6B35;      /* CTAs & glows */
+      --text:#EDEDED;        /* light text */
+      --muted:#a1a1aa;       /* muted */
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
-      margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
-      background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+      margin:0; background:var(--bg); color:var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      overflow-x:hidden;
     }
     a{color:inherit; text-decoration:none}
-    img{max-width:100%; display:block}
-    .container{width:min(1100px, 100% - 28px); margin-inline:auto}
-    .section{padding:56px 0}
-    .center{text-align:center}
-    .btn{display:inline-flex; align-items:center; justify-content:center; gap:.5rem; border:none; cursor:pointer; font-weight:700; letter-spacing:.2px; transition:transform .18s ease, box-shadow .18s ease, background .2s ease; border-radius:999px; padding:14px 22px}
-    .btn-primary{background:var(--orange); color:#fff; box-shadow:0 10px 20px rgba(255,107,53,.2)}
-    .btn-primary:hover{transform:translateY(-2px); box-shadow:0 14px 28px rgba(255,107,53,.28)}
-    .btn-outline{background:transparent; border:2px solid rgba(0,0,0,.08)}
 
-    /* Hero */
-    header{padding:18px 0}
-    .nav{display:flex; align-items:center; justify-content:space-between}
-    .logo{display:flex; align-items:center; gap:.6rem; font-weight:800}
-    .logo-dot{width:14px; height:14px; border-radius:50%; background:var(--teal); box-shadow:0 0 0 4px rgba(0,169,157,.15)}
-    .hero{padding:28px 0 10px}
-    .headline{font-size:clamp(28px, 7vw, 56px); line-height:1.02; letter-spacing:-.02em; font-weight:800; margin:10px 0}
-    .sub{color:var(--muted); font-size:clamp(16px, 3.5vw, 20px)}
-    .cta-row{margin-top:18px; display:flex; gap:12px; flex-wrap:wrap}
+    /* Canvases fill viewport */
+    .stage{position:fixed; inset:0; pointer-events:none}
+    #stars{z-index:0}
+    #globe{z-index:1}
 
-    /* Globe block */
-    .globe-wrap{position:relative; width:100%; height:380px; margin:14px auto 8px; border-radius:18px; overflow:hidden; background:radial-gradient(1200px 400px at 50% -10%, rgba(0,169,157,.20), transparent), #fff; box-shadow:var(--ring)}
-    canvas#globe{position:absolute; inset:0}
-    .globe-overlay{position:absolute; inset:auto 12px 12px 12px; display:flex; justify-content:center; pointer-events:none}
-    .hint{font-size:12px; color:var(--muted); background:rgba(255,255,255,.8); backdrop-filter:blur(6px); padding:6px 10px; border-radius:999px; box-shadow:0 6px 14px rgba(0,0,0,.08)}
+    /* Header */
+    .header{position:fixed; top:14px; left:14px; z-index:5; display:flex; align-items:center; gap:.6rem}
+    .logo-dot{width:12px; height:12px; border-radius:50%; background:var(--teal); box-shadow:0 0 18px rgba(0,169,157,.6)}
+    .brand{font-weight:800; letter-spacing:.2px}
+    .burger{appearance:none; background:rgba(255,255,255,.06); color:#fff; border:1px solid rgba(255,255,255,.08); padding:8px 10px; border-radius:10px; cursor:pointer; margin-left:8px; backdrop-filter:blur(6px); transition:transform .2s ease}
+    .burger:hover{transform:translateY(-1px)}
 
-    /* Pricing */
-    .pricing{display:grid; grid-template-columns:1fr; gap:14px; margin-top:18px}
-    @media(min-width:760px){.pricing{grid-template-columns:repeat(3,1fr)}}
-    .card{background:var(--card); border-radius:16px; padding:18px; box-shadow:var(--ring); position:relative; overflow:hidden; transform:translateZ(0); transition:transform .2s ease, box-shadow .2s ease}
-    .card:hover{transform:translateY(-4px); box-shadow:0 22px 60px rgba(0,0,0,.10)}
-    .card h3{margin:0 0 6px 0; font-size:20px}
-    .price{font-weight:800; font-size:28px; letter-spacing:.3px}
-    .muted{color:var(--muted)}
-    .slider-row{display:flex; align-items:center; gap:10px; margin:12px 0}
-    input[type="range"]{width:100%}
-    .total{font-weight:700; font-size:18px}
+    /* Nav overlay */
+    .overlay{position:fixed; inset:0; background:rgba(10,10,10,.7); backdrop-filter:blur(12px); display:grid; place-items:center; opacity:0; pointer-events:none; transition:opacity .25s ease; z-index:10}
+    .overlay.open{opacity:1; pointer-events:auto}
+    .drawer{background:#111; border:1px solid #2a2a2a; width:min(92vw,420px); border-radius:16px; padding:18px; box-shadow:0 40px 120px rgba(0,0,0,.6); transform:translateY(12px); opacity:0; transition:opacity .25s ease, transform .25s ease}
+    .overlay.open .drawer{transform:none; opacity:1}
+    .nav-links{display:grid; gap:12px}
+    .nav-links a{display:block; padding:12px 14px; border-radius:12px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06)}
 
-    /* Teal banner */
-    .banner{margin:28px 0; background:var(--teal); color:#fff; border-radius:14px; padding:18px; text-align:center; box-shadow:0 18px 40px rgba(0,169,157,.25)}
+    /* Floating tiles */
+    .tile{position:fixed; z-index:4; background:rgba(26,26,26,.78); color:var(--text); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:12px; backdrop-filter:blur(6px); box-shadow:0 12px 40px rgba(0,0,0,.5); width:210px; transform-origin:center; transition:transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;}
+    .tile:hover{transform:translateY(-2px)}
+    .tile h4{margin:0 0 6px 0; font-size:14px; letter-spacing:.2px}
+    .tile .row{display:flex; align-items:center; justify-content:space-between; gap:10px}
+    .tile .muted{color:var(--muted); font-size:12px}
+    .tile input[type=range]{width:100%}
+    .tile .cta{margin-top:8px; display:none}
+    .tile.expanded{background:rgba(26,26,26,.92); border-color:#333}
+    .tile.expanded .cta{display:block}
+    .btn{display:inline-flex; align-items:center; justify-content:center; gap:.5rem; border:none; cursor:pointer; font-weight:800; letter-spacing:.2px; border-radius:999px; padding:10px 14px; transition:transform .18s ease, box-shadow .18s ease}
+    .btn.orange{background:var(--orange); color:#111; box-shadow:0 8px 26px rgba(255,107,53,.35)}
+    .btn.orange:hover{transform:translateY(-2px)}
+    .btn.teal{background:rgba(0,169,157,.18); color:#c8fffa; border:1px solid rgba(0,169,157,.4)}
 
-    /* How it works */
-    .timeline{display:grid; gap:14px}
-    .step{display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:flex-start; background:#fff; border-radius:14px; padding:14px; box-shadow:var(--ring)}
-    .step-icon{width:40px; height:40px; border-radius:10px; display:grid; place-items:center; background:rgba(0,169,157,.1); color:var(--teal)}
-    .step h4{margin:2px 0 4px 0}
+    /* Hotspots */
+    .hotspot{position:fixed; z-index:3; width:18px; height:18px; border-radius:50%; background:var(--orange); box-shadow:0 0 18px rgba(255,107,53,.8), 0 0 40px rgba(255,107,53,.35) inset; transform:translate(-50%,-50%); pointer-events:auto}
 
-    /* Badges */
-    .badges{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:14px}
-    @media(min-width:760px){.badges{grid-template-columns:repeat(5,1fr)}}
-    .badge{background:#fff; padding:12px; border-radius:12px; text-align:center; box-shadow:var(--ring); font-weight:600}
+    /* Scroll indicator */
+    .scroll-ind{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:4; opacity:1; transition:opacity .6s ease}
+    .scroll-ind.hide{opacity:0}
 
-    /* Referral */
-    .ref{margin:28px 0; background:#fff; border-left:6px solid var(--orange); border-radius:14px; padding:18px; box-shadow:var(--ring); display:flex; flex-direction:column; gap:12px}
-    @media(min-width:760px){.ref{flex-direction:row; align-items:center; justify-content:space-between}}
+    /* Referral strip */
+    .ref-strip{position:fixed; left:0; right:0; bottom:0; z-index:6; background:var(--orange); color:#111; display:flex; align-items:center; justify-content:center; gap:12px; padding:10px 14px; font-weight:700; box-shadow:0 -10px 30px rgba(255,107,53,.2)}
+    .ref-strip button{background:#111; color:#fff; border:none; padding:8px 12px; border-radius:10px; cursor:pointer}
 
-    /* Footer */
-    footer{background:#222; color:#e5e7eb; padding:28px 0; margin-top:40px}
-    .f-grid{display:grid; gap:16px; align-items:center}
-    @media(min-width:760px){.f-grid{grid-template-columns:auto 1fr auto}}
-    .links{display:flex; flex-wrap:wrap; gap:14px; opacity:.9}
-    .social{display:flex; gap:10px}
-    .social a{width:36px; height:36px; display:grid; place-items:center; background:rgba(255,255,255,.06); border-radius:50%; transition:transform .2s ease, background .2s ease}
-    .social a:hover{transform:translateY(-3px); background:rgba(255,255,255,.12)}
+    /* Share modal */
+    .share{position:fixed; inset:0; z-index:20; display:grid; place-items:center; background:rgba(0,0,0,.6); opacity:0; pointer-events:none; transition:opacity .2s ease}
+    .share.open{opacity:1; pointer-events:auto}
+    .sheet{background:#111; border:1px solid #2b2b2b; color:#fff; border-radius:16px; width:min(92vw, 520px); padding:18px; box-shadow:0 40px 120px rgba(0,0,0,.6)}
+    .sheet .row{display:flex; gap:10px}
+    .sheet input{flex:1; padding:10px 12px; border-radius:10px; border:1px solid #2b2b2b; background:#0f0f0f; color:#fff}
+    .sheet button{padding:10px 12px; border-radius:10px; border:1px solid #2b2b2b; background:var(--orange); color:#111; font-weight:800; cursor:pointer}
 
-    /* Appear on scroll */
-    .reveal{opacity:0; transform:translateY(12px); transition:opacity .6s ease, transform .6s ease}
-    .reveal.show{opacity:1; transform:none}
-
-    /* Utility */
-    .pill{display:inline-block; padding:6px 10px; border-radius:999px; font-weight:700; background:rgba(0,169,157,.10); color:var(--teal); font-size:12px}
+    /* Text blocks fade-in */
+    .text-block{position:fixed; right:14px; top:14px; z-index:4; max-width:40ch; opacity:0; transform:translateY(8px); transition:opacity .6s ease, transform .6s ease}
+    .text-block.show{opacity:1; transform:none}
   </style>
 </head>
 <body>
-  <header class="container">
-    <nav class="nav">
-      <div class="logo" aria-label="DuraSim">
-        <span class="logo-dot"></span>
-        <span style="color:var(--teal)">Dura</span><span>Sim</span>
-      </div>
-      <div class="hide-mobile"><a class="btn btn-outline" href="#pricing">Pricing</a></div>
-    </nav>
-  </header>
+  <!-- Parallax stars and Globe canvases -->
+  <canvas id="stars" class="stage" aria-hidden="true"></canvas>
+  <canvas id="globe" class="stage" aria-label="Interactive globe"></canvas>
 
-  <main>
-    <!-- Hero -->
-    <section class="container hero reveal">
-      <span class="pill">World’s first group eSIM</span>
-      <h1 class="headline">One Plan. Multiple Travelers. Zero Hassle.</h1>
-      <p class="sub">DuraSim is the world’s first group eSIM platform—built for travelers, not telecoms.</p>
-      <div class="cta-row">
-        <a href="#pricing" class="btn btn-primary">Get Started – No Setup Required</a>
-      </div>
-    </section>
+  <!-- Header with brand + burger -->
+  <div class="header">
+    <div class="logo-dot"></div>
+    <div class="brand" style="color:var(--teal)">Dura</div><div class="brand">Sim</div>
+    <button id="burger" class="burger" aria-label="Open navigation">≡</button>
+  </div>
 
-    <!-- Globe -->
-    <section class="container section">
-      <div class="globe-wrap reveal">
-        <canvas id="globe" aria-label="Spinning globe"></canvas>
-        <div class="globe-overlay"><span class="hint">Scroll to speed up • Move mouse to steer</span></div>
+  <!-- Slide-in nav overlay -->
+  <div id="navOverlay" class="overlay" aria-hidden="true">
+    <div class="drawer">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px">
+        <div style="display:flex; align-items:center; gap:8px"><span class="logo-dot"></span><strong>DuraSim</strong></div>
+        <button id="closeNav" class="burger" aria-label="Close">Close</button>
       </div>
-    </section>
-
-    <!-- Pricing -->
-    <section id="pricing" class="container section">
-      <div class="center reveal" style="margin-bottom:14px">
-        <h2 style="margin:0 0 6px 0">Simple group pricing</h2>
-        <p class="muted" style="margin:0">Add friends and save up to £xxx vs individual eSIMs</p>
-      </div>
-      <div class="pricing">
-        <article class="card reveal price-card" data-region="asia">
-          <h3>Asia</h3>
-          <div class="price">£xxx <span class="muted" style="font-size:14px; font-weight:600">base</span></div>
-          <div class="slider-row">
-            <label class="muted" for="asia-extra">Extra travelers</label>
-            <input id="asia-extra" type="range" min="0" max="10" value="0" />
-            <span id="asia-count" class="muted" style="min-width:2ch; text-align:right">0</span>
-          </div>
-          <div class="muted" style="font-size:14px">+ £xxx each</div>
-          <div style="height:8px"></div>
-          <div class="total">Total: £xxx</div>
-          <div style="height:10px"></div>
-          <button class="btn btn-primary" style="width:100%">Create Group Plan</button>
-        </article>
-        <article class="card reveal price-card" data-region="europe">
-          <h3>Europe</h3>
-          <div class="price">£xxx <span class="muted" style="font-size:14px; font-weight:600">base</span></div>
-          <div class="slider-row">
-            <label class="muted" for="eu-extra">Extra travelers</label>
-            <input id="eu-extra" type="range" min="0" max="10" value="0" />
-            <span id="eu-count" class="muted" style="min-width:2ch; text-align:right">0</span>
-          </div>
-          <div class="muted" style="font-size:14px">+ £xxx each</div>
-          <div style="height:8px"></div>
-          <div class="total">Total: £xxx</div>
-          <div style="height:10px"></div>
-          <button class="btn btn-primary" style="width:100%">Create Group Plan</button>
-        </article>
-        <article class="card reveal price-card" data-region="americas">
-          <h3>Americas</h3>
-          <div class="price">£xxx <span class="muted" style="font-size:14px; font-weight:600">base</span></div>
-          <div class="slider-row">
-            <label class="muted" for="am-extra">Extra travelers</label>
-            <input id="am-extra" type="range" min="0" max="10" value="0" />
-            <span id="am-count" class="muted" style="min-width:2ch; text-align:right">0</span>
-          </div>
-          <div class="muted" style="font-size:14px">+ £xxx each</div>
-          <div style="height:8px"></div>
-          <div class="total">Total: £xxx</div>
-          <div style="height:10px"></div>
-          <button class="btn btn-primary" style="width:100%">Create Group Plan</button>
-        </article>
-      </div>
-    </section>
-
-    <!-- Teal banner -->
-    <section class="container section">
-      <div class="banner reveal">No apps. No SIM swaps. No setup. Just scan and go.</div>
-    </section>
-
-    <!-- How it works -->
-    <section class="container section">
-      <div class="center reveal" style="margin-bottom:14px">
-        <h2 style="margin:0 0 6px 0">How it works</h2>
-        <p class="muted" style="margin:0">From purchase to activation in minutes.</p>
-      </div>
-      <div class="timeline">
-        <div class="step reveal">
-          <div class="step-icon" aria-hidden="true">
-            <!-- cart icon -->
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h7.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-          </div>
-          <div>
-            <h4>Leader buys £xxx plan</h4>
-            <p class="muted" style="margin:0">Choose a region and the group size that fits your trip.</p>
-          </div>
-        </div>
-        <div class="step reveal">
-          <div class="step-icon" aria-hidden="true">
-            <!-- qr icon -->
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3z"></path><path d="M14 3h7v7h-7z"></path><path d="M14 14h7v7h-7z"></path><path d="M3 14h7v7H3z"></path></svg>
-          </div>
-          <div>
-            <h4>Invite friends via QR</h4>
-            <p class="muted" style="margin:0">Share a link or QR. Everyone joins the shared data pool.</p>
-          </div>
-        </div>
-        <div class="step reveal">
-          <div class="step-icon" aria-hidden="true">
-            <!-- spark icon -->
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l14 8-14 8 4-8-4-8z"></path></svg>
-          </div>
-          <div>
-            <h4>Everyone activates instantly</h4>
-            <p class="muted" style="margin:0">No apps, no swaps—just scan and go.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Trust badges -->
-    <section class="container section">
-      <div class="badges">
-        <div class="badge reveal">Instant activation</div>
-        <div class="badge reveal">Shared data pool</div>
-        <div class="badge reveal">GDPR compliant</div>
-        <div class="badge reveal">24/7 support</div>
-        <div class="badge reveal">Patent‑pending group engine</div>
-      </div>
-    </section>
-
-    <!-- Referral banner -->
-    <section class="container section">
-      <div class="ref reveal">
-        <div>
-          <h3 style="margin:0 0 6px 0">Traveling with friends?</h3>
-          <p class="muted" style="margin:0">Earn £xxx credit for every group you refer.</p>
-        </div>
-        <div>
-          <button id="inviteBtn" class="btn btn-primary">Invite Friends</button>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer>
-    <div class="container f-grid">
-      <div class="logo" aria-label="DuraSim" style="color:#fff">
-        <span class="logo-dot" style="box-shadow:none"></span>
-        <span style="color:var(--teal)">Dura</span><span>Sim</span>
-      </div>
-      <nav class="links">
-        <a href="#" aria-label="How it Works">How it Works</a>
-        <a href="#pricing" aria-label="Pricing">Pricing</a>
-        <a href="#" aria-label="Support">Support</a>
-        <a href="#" aria-label="Partnerships">Partnerships</a>
-        <a href="#" aria-label="White-label SDK">White-label SDK</a>
+      <nav class="nav-links">
+        <a href="#">How it Works</a>
+        <a href="#">Pricing</a>
+        <a href="#">Support</a>
+        <a href="#">Partnerships</a>
+        <a href="#">SDK</a>
       </nav>
-      <div class="social">
-        <a href="#" aria-label="Twitter" title="Twitter">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e5e7eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 3a10.9 10.9 0 0 1-3.14 1.53 4.48 4.48 0 0 0-7.86 3v1A10.66 10.66 0 0 1 3 4s-4 9 5 13a11.64 11.64 0 0 1-7 2c9 5 20 0 20-11.5a4.5 4.5 0 0 0-.08-.83"></path></svg>
-        </a>
-        <a href="#" aria-label="LinkedIn" title="LinkedIn">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e5e7eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
-        </a>
-        <a href="#" aria-label="GitHub" title="GitHub">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e5e7eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.6 5.6 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.67 1.05-.82 1.65-.15.6-.18 1.23-.08 1.85"></path><path d="M9 18c-4 2-5-2-7-2"></path></svg>
-        </a>
+    </div>
+  </div>
+
+  <!-- Floating tiles for each region -->
+  <div id="tile-asia" class="tile" role="dialog" aria-label="Asia plan">
+    <h4>Asia</h4>
+    <div class="row"><span class="muted">Base £xxx + £xxx per extra traveler</span></div>
+    <div class="row" style="margin-top:8px">
+      <input type="range" min="0" max="10" value="0" data-region="asia" class="micro" />
+      <span id="count-asia" class="muted">0</span>
+    </div>
+    <div class="row" style="margin-top:6px"><strong>Total £xxx</strong></div>
+    <div class="cta">
+      <div class="row" style="margin-top:8px"><span class="btn teal">Add Friends</span><button class="btn orange">Create Group Plan</button></div>
+    </div>
+  </div>
+  <div id="tile-europe" class="tile" role="dialog" aria-label="Europe plan">
+    <h4>Europe</h4>
+    <div class="row"><span class="muted">Base £xxx + £xxx per extra traveler</span></div>
+    <div class="row" style="margin-top:8px">
+      <input type="range" min="0" max="10" value="0" data-region="europe" class="micro" />
+      <span id="count-europe" class="muted">0</span>
+    </div>
+    <div class="row" style="margin-top:6px"><strong>Total £xxx</strong></div>
+    <div class="cta">
+      <div class="row" style="margin-top:8px"><span class="btn teal">Add Friends</span><button class="btn orange">Create Group Plan</button></div>
+    </div>
+  </div>
+  <div id="tile-americas" class="tile" role="dialog" aria-label="Americas plan">
+    <h4>Americas</h4>
+    <div class="row"><span class="muted">Base £xxx + £xxx per extra traveler</span></div>
+    <div class="row" style="margin-top:8px">
+      <input type="range" min="0" max="10" value="0" data-region="americas" class="micro" />
+      <span id="count-americas" class="muted">0</span>
+    </div>
+    <div class="row" style="margin-top:6px"><strong>Total £xxx</strong></div>
+    <div class="cta">
+      <div class="row" style="margin-top:8px"><span class="btn teal">Add Friends</span><button class="btn orange">Create Group Plan</button></div>
+    </div>
+  </div>
+
+  <!-- Hotspots -->
+  <div id="hs-asia" class="hotspot" title="Asia"></div>
+  <div id="hs-europe" class="hotspot" title="Europe"></div>
+  <div id="hs-americas" class="hotspot" title="Americas"></div>
+
+  <!-- Subtle helper text -->
+  <div id="heroText" class="text-block">
+    <div style="font-size:12px; color:var(--muted); margin-bottom:4px">World’s first group‑eSIM</div>
+    <div style="font-size:20px; font-weight:800; line-height:1.1">One Plan. Multiple Travelers. Zero Hassle.</div>
+    <div style="font-size:13px; color:var(--muted); margin-top:6px">DuraSim is the world’s first group eSIM platform—built for travelers, not telecoms.</div>
+  </div>
+
+  <!-- Scroll indicator -->
+  <div id="scrollInd" class="scroll-ind" aria-hidden="true">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+  </div>
+
+  <!-- Referral strip -->
+  <div class="ref-strip">
+    <span>Traveling with friends? Earn £xxx credit per referral — Invite Friends</span>
+    <button id="invite">Invite</button>
+  </div>
+
+  <!-- Share modal -->
+  <div id="share" class="share" aria-hidden="true">
+    <div class="sheet">
+      <h3 style="margin:0 0 8px 0">Invite friends</h3>
+      <p style="margin:0 0 10px 0; color:#c9c9c9">Share your link and earn £xxx credit per referral.</p>
+      <div class="row">
+        <input id="refLink" value="https://durasim.example/ref?code=YOUR-CODE" readonly />
+        <button id="copy">Copy</button>
       </div>
     </div>
-  </footer>
+  </div>
 
-  <!-- Referral modal -->
-  <dialog id="refModal" style="border:none; border-radius:16px; padding:0; max-width:520px; width:92%; box-shadow:0 30px 80px rgba(0,0,0,.3)">
-    <div style="padding:18px">
-      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px">
-        <h3 style="margin:0">Invite friends</h3>
-        <button id="closeModal" class="btn btn-outline" style="padding:8px 12px">Close</button>
-      </div>
-      <p class="muted" style="margin-top:0">Share your link and earn £xxx credit for every group you refer.</p>
-      <div style="display:grid; gap:10px">
-        <input id="refLink" type="text" readonly value="https://durasim.example/ref?code=YOUR-CODE" style="padding:12px; border-radius:10px; border:1px solid #e5e7eb; font-size:14px" />
-        <button id="copyLink" class="btn btn-primary" style="justify-self:start">Copy link</button>
-      </div>
-    </div>
-  </dialog>
-
-  <!-- Three.js -->
-  <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
   <script>
-    // Reveal on scroll
-    const revealEls = document.querySelectorAll('.reveal');
-    const io = new IntersectionObserver((entries)=>{
-      entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('show'); io.unobserve(e.target);} });
-    }, {threshold:.12});
-    revealEls.forEach(el=>io.observe(el));
+  (function(){
+    const log = (...args)=>console.log('[DEBUG]', ...args);
 
-    // Pricing sliders (counts only; all prices remain £xxx by requirement)
-    const sliders = [
-      { id:'asia-extra', out:'asia-count' },
-      { id:'eu-extra', out:'eu-count' },
-      { id:'am-extra', out:'am-count' }
-    ];
-    sliders.forEach(s=>{
-      const r=document.getElementById(s.id); const o=document.getElementById(s.out);
-      if(r&&o){ r.addEventListener('input',()=> o.textContent = r.value); }
-    });
-
-    // Referral modal
-    const refModal = document.getElementById('refModal');
-    document.getElementById('inviteBtn').addEventListener('click', ()=>{ refModal.showModal(); });
-    document.getElementById('closeModal').addEventListener('click', ()=>{ refModal.close(); });
-    document.getElementById('copyLink').addEventListener('click', ()=>{
-      const inp=document.getElementById('refLink'); inp.select(); inp.setSelectionRange(0, 99999);
-      navigator.clipboard?.writeText(inp.value); 
-      const btn = document.getElementById('copyLink');
-      const prev=btn.textContent; btn.textContent='Copied'; setTimeout(()=>btn.textContent=prev, 1400);
-    });
-
-    // Three.js Globe
-    const canvas = document.getElementById('globe');
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(55, canvas.clientWidth / canvas.clientHeight, 0.1, 100);
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:true });
-
+    // Canvases and sizes
+    const stars = document.getElementById('stars');
+    const globe = document.getElementById('globe');
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
     function resize(){
-      const wrap = canvas.parentElement; const w = wrap.clientWidth; const h = wrap.clientHeight;
-      renderer.setSize(w, h, false); camera.aspect = w/h; camera.updateProjectionMatrix();
+      const w = window.innerWidth, h = window.innerHeight;
+      [stars, globe].forEach(c=>{ c.width = Math.floor(w*dpr); c.height = Math.floor(h*dpr); c.style.width=w+'px'; c.style.height=h+'px'; });
+      sctx.setTransform(dpr,0,0,dpr,0,0);
+      gctx.setTransform(dpr,0,0,dpr,0,0);
+      updatePositions();
     }
-    resize();
-    window.addEventListener('resize', resize, {passive:true});
+    const sctx = stars.getContext('2d');
+    const gctx = globe.getContext('2d');
 
-    camera.position.set(0, 0, 3.2);
-
-    // Globe sphere
-    const globeGeom = new THREE.SphereGeometry(1, 64, 64);
-    const globeMat = new THREE.MeshStandardMaterial({ color: 0x0a2c2a, metalness:0.1, roughness:0.9, emissive:0x113b38, emissiveIntensity:.25 });
-    const globe = new THREE.Mesh(globeGeom, globeMat);
-    scene.add(globe);
-
-    // Atmosphere glow
-    const glowGeom = new THREE.SphereGeometry(1.02, 64, 64);
-    const glowMat = new THREE.MeshBasicMaterial({ color: 0x00A99D, transparent:true, opacity:.12, blending: THREE.AdditiveBlending });
-    const glow = new THREE.Mesh(glowGeom, glowMat); scene.add(glow);
-
-    // Lights
-    const amb = new THREE.AmbientLight(0xffffff, .7); scene.add(amb);
-    const dir = new THREE.DirectionalLight(0xffffff, .7); dir.position.set(5,3,5); scene.add(dir);
-
-    // Region glows (simple pulsing markers at centroids)
-    function latLngToVector3(lat, lon, radius=1.01){
-      const phi = (90 - lat) * (Math.PI/180);
-      const theta = (lon + 180) * (Math.PI/180);
-      const x = -radius * Math.sin(phi) * Math.cos(theta);
-      const z =  radius * Math.sin(phi) * Math.sin(theta);
-      const y =  radius * Math.cos(phi);
-      return new THREE.Vector3(x,y,z);
+    // Star field
+    const STAR_COUNT = 160;
+    const starField = Array.from({length:STAR_COUNT}, ()=>({ x: Math.random(), y: Math.random(), r: Math.random()*1.2 + .2, o: .3 + Math.random()*.7 }));
+    function drawStars(offsetY=0){
+      const w = window.innerWidth, h = window.innerHeight;
+      sctx.clearRect(0,0,w,h);
+      sctx.fillStyle = '#000'; sctx.fillRect(0,0,w,h);
+      for(const s of starField){
+        const px = s.x * w;
+        const py = (s.y * h) + offsetY * (0.08 + s.r*0.02);
+        sctx.beginPath(); sctx.arc(px, ((py%h)+h)%h, s.r, 0, Math.PI*2); sctx.closePath();
+        sctx.fillStyle = `rgba(255,255,255,${s.o})`;
+        sctx.fill();
+      }
     }
-    function makeRegion(color){
-      const g = new THREE.SphereGeometry(0.08, 32, 32);
-      const m = new THREE.MeshBasicMaterial({ color, transparent:true, opacity:.95 });
-      const s = new THREE.Mesh(g, m); s.visible=false; scene.add(s); return s;
-    }
-    const regions = {
-      asia: makeRegion(0x00A99D),      // near Singapore
-      europe: makeRegion(0x00A99D),    // near Frankfurt
-      americas: makeRegion(0x00A99D)   // near Mexico City
-    };
-    regions.asia.position.copy(latLngToVector3(1.3, 103.8));
-    regions.europe.position.copy(latLngToVector3(50.1, 8.6));
-    regions.americas.position.copy(latLngToVector3(19.4, -99.1));
 
-    let activeRegion = 'asia';
-    function setActiveRegion(key){
-      activeRegion = key;
-      Object.keys(regions).forEach(k=> regions[k].visible = (k===key));
-    }
-    setActiveRegion('asia');
+    // Simple 3D globe drawn in 2D canvas (shaded sphere + meridians)
+    let rotY = -1.815; // start facing Asia
+    let rotYTarget = rotY;
+    let tiltX = 0.18;  // slight tilt
+    const stepRad = (30*Math.PI/180);
 
-    // Mouse steer (desktop)
-    let targetRot = new THREE.Vector2(0,0);
-    let currentRot = new THREE.Vector2(0,0);
-    const wrap = canvas.parentElement;
-    function onPointerMove(e){
-      const rect = wrap.getBoundingClientRect();
-      const x = (e.clientX - rect.left)/rect.width; // 0..1
-      const y = (e.clientY - rect.top)/rect.height; // 0..1
-      targetRot.x = (x - .5) * 0.6; // yaw
-      targetRot.y = (y - .5) * 0.3; // pitch
-    }
-    wrap.addEventListener('pointermove', onPointerMove);
+    function drawGlobe(){
+      const w = window.innerWidth, h = window.innerHeight;
+      const cx=w/2, cy=h/2; const R = Math.min(w,h)*0.35;
+      gctx.clearRect(0,0,w,h);
 
-    // Scroll speed boost
-    let spinSpeed = 0.0035; // base
-    let addSpeed = 0;
-    let lastScroll = 0;
-    function onScroll(){
-      const y = window.scrollY; const dy = y - lastScroll; lastScroll = y;
-      addSpeed += Math.max(-0.02, Math.min(0.02, Math.abs(dy) * 0.00025));
-    }
-    window.addEventListener('scroll', onScroll, {passive:true});
-    window.addEventListener('wheel', (e)=>{ addSpeed += Math.min(0.05, Math.abs(e.deltaY)*0.0003); }, {passive:true});
-    // touch
-    let lastTouchY = null; window.addEventListener('touchmove', (e)=>{
-      const y = e.touches[0]?.clientY ?? 0; if(lastTouchY!==null){ addSpeed += Math.min(0.04, Math.abs(y-lastTouchY)*0.0006); } lastTouchY = y;
-    }, {passive:true});
+      // Sphere lighting
+      const grad = gctx.createRadialGradient(cx - R*0.3, cy - R*0.3, R*0.2, cx, cy, R*1.2);
+      grad.addColorStop(0, '#0f2b29');
+      grad.addColorStop(1, '#0c1413');
+      gctx.fillStyle = grad; gctx.beginPath(); gctx.arc(cx,cy,R,0,Math.PI*2); gctx.fill();
 
-    // Animate
-    const clock = new THREE.Clock();
-    function animate(){
-      requestAnimationFrame(animate);
-      const dt = clock.getDelta();
+      // Atmosphere glow
+      const glowGrad = gctx.createRadialGradient(cx, cy, R*0.9, cx, cy, R*1.3);
+      glowGrad.addColorStop(0, 'rgba(0,169,157,0.0)');
+      glowGrad.addColorStop(1, 'rgba(0,169,157,0.25)');
+      gctx.fillStyle = glowGrad; gctx.beginPath(); gctx.arc(cx,cy,R*1.15,0,Math.PI*2); gctx.fill();
 
-      // ease rotation toward pointer
-      currentRot.x += (targetRot.x - currentRot.x) * 0.05;
-      currentRot.y += (targetRot.y - currentRot.y) * 0.05;
+      // Meridians/Parallels for hint of 3D
+      gctx.lineWidth = 1;
+      gctx.strokeStyle = 'rgba(255,255,255,.06)';
+      for(let lat=-60; lat<=60; lat+=30){ drawCircleLat(lat); }
+      for(let lon=0; lon<180; lon+=30){ drawCircleLon(lon); }
 
-      // apply scroll boost with damping
-      addSpeed *= 0.94;
-      const speed = spinSpeed + addSpeed;
-
-      globe.rotation.y += speed;
-      glow.rotation.y += speed;
-
-      // pitch around x
-      globe.rotation.x = currentRot.y;
-      glow.rotation.x = currentRot.y;
-
-      // pulse active region
-      const t = performance.now()*0.004;
-      const node = regions[activeRegion];
-      if(node){
-        const s = 1 + Math.sin(t)*0.12 + 0.12;
-        node.scale.setScalar(s);
-        node.material.opacity = 0.6 + Math.sin(t*1.2)*0.35;
+      function project(lat, lon){
+        // Convert to 3D unit sphere, apply rotations, then project to 2D
+        const toRad = Math.PI/180; lat*=toRad; lon*=toRad;
+        let x = Math.cos(lat)*Math.cos(lon);
+        let y = Math.sin(lat);
+        let z = Math.cos(lat)*Math.sin(lon);
+        // rotate around X (tilt)
+        let y2 = y*Math.cos(tiltX) - z*Math.sin(tiltX);
+        let z2 = y*Math.sin(tiltX) + z*Math.cos(tiltX);
+        y = y2; z = z2;
+        // rotate around Y (spin)
+        let x2 = x*Math.cos(rotY) + z*Math.sin(rotY);
+        z2 = -x*Math.sin(rotY) + z*Math.cos(rotY);
+        x = x2; z = z2;
+        const scale = R * 1.2 / (2.2 - z); // simple perspective
+        const sx = cx + x*scale;
+        const sy = cy - y*scale;
+        const visible = z > -0.2; // simple visibility check
+        return {x:sx, y:sy, visible, z};
+      }
+      function drawCircleLat(lat){
+        const pts=[]; for(let lon=-180; lon<=180; lon+=6){ const p=project(lat,lon); if(p.visible) pts.push(p); }
+        if(pts.length<2) return; gctx.beginPath(); gctx.moveTo(pts[0].x, pts[0].y); for(const p of pts) gctx.lineTo(p.x,p.y); gctx.stroke();
+      }
+      function drawCircleLon(lon){
+        const pts=[]; for(let lat=-80; lat<=80; lat+=6){ const p=project(lat,lon); if(p.visible) pts.push(p); }
+        if(pts.length<2) return; gctx.beginPath(); gctx.moveTo(pts[0].x, pts[0].y); for(const p of pts) gctx.lineTo(p.x,p.y); gctx.stroke();
       }
 
-      renderer.render(scene, camera);
-    }
-    animate();
-
-    // Observe pricing cards and set region highlight
-    const cards = document.querySelectorAll('.price-card');
-    const cardIO = new IntersectionObserver((entries)=>{
-      entries.forEach(e=>{
-        if(e.isIntersecting && e.intersectionRatio > 0.6){
-          const key = e.target.getAttribute('data-region');
-          setActiveRegion(key);
+      // Update hotspot and tile positions
+      function place(region){
+        const p = project(region.lat, region.lon);
+        const hs = document.getElementById('hs-'+region.key);
+        const tile = document.getElementById('tile-'+region.key);
+        if(hs){ hs.style.left = p.x+'px'; hs.style.top = p.y+'px'; hs.style.opacity = p.visible?1:0; }
+        if(tile){ const tx = p.x + (region.tileOffsetX|| 24), ty = p.y + (region.tileOffsetY|| -24);
+          tile.style.left = Math.max(10, Math.min(window.innerWidth-220, tx)) + 'px';
+          tile.style.top = Math.max(10, Math.min(window.innerHeight-140, ty)) + 'px';
+          tile.style.opacity = p.visible?1:0.96;
         }
-      })
-    }, { root:null, threshold:[0, .25, .5, .6, .75, 1] });
-    cards.forEach(c=>cardIO.observe(c));
+      }
+      regions.forEach(place);
+    }
+
+    // Regions
+    const regions = [
+      { key:'asia',     lat:  1.3, lon:103.8, tileOffsetX:  28, tileOffsetY:-40, facing:- (103.8*Math.PI/180) },
+      { key:'europe',   lat: 50.1, lon:  8.6, tileOffsetX: -240, tileOffsetY:-20, facing:- (  8.6*Math.PI/180) },
+      { key:'americas', lat: 19.4, lon:-99.1, tileOffsetX:  28, tileOffsetY: 28, facing:- (-99.1*Math.PI/180) }
+    ];
+    let regionIndex = 0;
+
+    function currentRegion(){
+      // Determine which region faces closest to center (rotY ≈ region.facing)
+      let minD=1e9, idx=0; regions.forEach((r,i)=>{ const d = Math.abs(angleDelta(rotY, r.facing)); if(d<minD){minD=d; idx=i;} });
+      return idx;
+    }
+    function angleDelta(a,b){ let d = a-b; while(d> Math.PI) d-=Math.PI*2; while(d<-Math.PI) d+=Math.PI*2; return d; }
+    function stepToRegion(dir){
+      regionIndex = (regionIndex + (dir>0?1:-1) + regions.length) % regions.length;
+      rotYTarget = regions[regionIndex].facing;
+      log('scroll-step -> region', regions[regionIndex].key);
+    }
+
+    // Scroll logic: step through regions; also apply smooth spin based on delta
+    let firstScroll = true;
+    function onWheel(e){
+      e.preventDefault();
+      if(firstScroll){ document.getElementById('scrollInd').classList.add('hide'); firstScroll=false; }
+      const dir = Math.sign(e.deltaY);
+      stepToRegion(dir);
+      log('wheel', {deltaY:e.deltaY, target:rotYTarget});
+    }
+    window.addEventListener('wheel', onWheel, {passive:false});
+
+    // Touch swipe for mobile
+    let tsY=null; window.addEventListener('touchstart', (e)=>{ tsY=e.touches[0].clientY; }, {passive:true});
+    window.addEventListener('touchend', (e)=>{ if(tsY==null) return; const dy=(e.changedTouches[0].clientY - tsY); if(Math.abs(dy)>24){ stepToRegion(dy<0?1:-1); if(firstScroll){ document.getElementById('scrollInd').classList.add('hide'); firstScroll=false; } } tsY=null; }, {passive:true});
+
+    // Mouse move to steer slightly
+    globe.addEventListener('pointermove', (e)=>{
+      const x = (e.clientX / window.innerWidth) - .5;
+      rotYTarget += x * 0.0005 * window.innerWidth; // tiny steer
+    }, {passive:true});
+
+    // Snapping to 30° grid when close
+    function applySnap(){
+      const snap = Math.round(rotYTarget/stepRad)*stepRad;
+      if(Math.abs(angleDelta(rotYTarget, snap)) < (5*Math.PI/180)){
+        rotYTarget = snap;
+      }
+    }
+
+    // Animate
+    let lastY=0; let t=0;
+    function frame(){
+      t += 1/60;
+      drawStars(window.scrollY * -0.15);
+      applySnap();
+      rotY += angleDelta(rotYTarget, rotY) * 0.08;
+      drawGlobe();
+
+      // Pulse hotspots
+      const s = 1 + Math.sin(t*2)*0.2;
+      ['asia','europe','americas'].forEach(k=>{ const el=document.getElementById('hs-'+k); el.style.transform = `translate(-50%,-50%) scale(${s})`; });
+
+      // Log region on change
+      const idx = currentRegion();
+      if(idx !== lastY){ lastY = idx; log('region', regions[idx].key); }
+
+      requestAnimationFrame(frame);
+    }
+
+    // Interactions: tiles and hotspots
+    function setupTile(key){
+      const tile = document.getElementById('tile-'+key);
+      const hs = document.getElementById('hs-'+key);
+      const slider = tile.querySelector('input[type=range]');
+      slider.addEventListener('input', ()=>{
+        document.getElementById('count-'+key).textContent = slider.value;
+        log('slider', {region:key, value:slider.value, total:'£xxx'});
+      });
+      function toggleExpand(){ tile.classList.toggle('expanded'); log('tile-toggle', {region:key, expanded:tile.classList.contains('expanded')}); }
+      tile.addEventListener('click', (e)=>{ toggleExpand(); e.stopPropagation(); });
+      hs.addEventListener('click', (e)=>{ toggleExpand(); e.stopPropagation(); });
+      hs.addEventListener('pointerenter', ()=>{ hs.style.boxShadow='0 0 24px rgba(255,107,53,.95), 0 0 50px rgba(255,107,53,.45) inset'; log('hotspot-hover', {region:key}); });
+      hs.addEventListener('pointerleave', ()=>{ hs.style.boxShadow='0 0 18px rgba(255,107,53,.8), 0 0 40px rgba(255,107,53,.35) inset'; });
+      tile.querySelectorAll('.btn').forEach(btn=> btn.addEventListener('click', (e)=>{ log('cta', {region:key, action:btn.textContent.trim()}); e.stopPropagation(); }));
+    }
+    ['asia','europe','americas'].forEach(setupTile);
+
+    // Header/nav
+    const nav = document.getElementById('navOverlay');
+    document.getElementById('burger').addEventListener('click', ()=>{ nav.classList.add('open'); log('nav','open'); });
+    document.getElementById('closeNav').addEventListener('click', ()=>{ nav.classList.remove('open'); log('nav','close'); });
+    nav.addEventListener('click', (e)=>{ if(e.target===nav){ nav.classList.remove('open'); log('nav','close-backdrop'); } });
+
+    // Referral
+    const share = document.getElementById('share');
+    document.getElementById('invite').addEventListener('click', ()=>{ share.classList.add('open'); log('referral','open'); });
+    share.addEventListener('click', (e)=>{ if(e.target===share){ share.classList.remove('open'); log('referral','close-backdrop'); } });
+    document.getElementById('copy').addEventListener('click', ()=>{
+      const v = document.getElementById('refLink').value; navigator.clipboard && navigator.clipboard.writeText(v);
+      log('referral','copy', v);
+    });
+
+    // Text block appear
+    setTimeout(()=>{ document.getElementById('heroText').classList.add('show'); }, 300);
+
+    // Init
+    window.addEventListener('resize', resize);
+    resize();
+    requestAnimationFrame(frame);
+
+    function updatePositions(){ drawGlobe(); }
+
+  })();
   </script>
 </body>
 </html>
