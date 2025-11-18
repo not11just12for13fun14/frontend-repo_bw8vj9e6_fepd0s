@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>DuraSim — Group eSIM (Dark • 3D Globe)</title>
-  <meta name="description" content="DuraSim is the world’s first group‑eSIM platform." />
+  <title>DuraSim — Group eSIM + Solo (Dark • 3D Globe)</title>
+  <meta name="description" content="DuraSim is the world’s first group‑eSIM platform, with a seamless solo start." />
   <style>
     :root{
       --bg:#0A0A0A;          /* background */
@@ -42,12 +42,13 @@
     .hotspot{position:fixed; z-index:3; width:22px; height:22px; border-radius:50%; background:var(--orange); box-shadow:0 0 22px rgba(255,107,53,.95), 0 0 50px rgba(255,107,53,.45) inset; transform:translate(-50%,-50%) scale(1); pointer-events:auto; transition:transform .15s ease}
     .hotspot:hover{transform:translate(-50%,-50%) scale(1.2)}
 
-    /* Tiles (less clustered: smart offsets, larger, auto-nudge) */
-    .tile{position:fixed; z-index:4; background:rgba(26,26,26,.86); color:var(--text); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:14px; backdrop-filter:blur(8px); box-shadow:0 16px 44px rgba(0,0,0,.55); width:260px; transform-origin:center; transition:transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease, opacity .2s ease}
+    /* Tiles (smart offsets, larger, auto-nudge) */
+    .tile{position:fixed; z-index:4; background:rgba(26,26,26,.86); color:var(--text); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:14px; backdrop-filter:blur(8px); box-shadow:0 16px 44px rgba(0,0,0,.55); width:280px; transform-origin:center; transition:transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease, opacity .2s ease}
     .tile:hover{transform:translateY(-2px)}
-    .tile h4{margin:0 0 6px 0; font-size:16px; letter-spacing:.2px}
+    .tile h4{margin:0 0 8px 0; font-size:16px; letter-spacing:.2px}
     .tile .row{display:flex; align-items:center; justify-content:space-between; gap:10px}
     .tile .muted{color:var(--muted); font-size:12px}
+    .tile .help{color:#bdbdbd; font-size:11px; margin-top:6px}
     .tile input[type=range]{width:100%}
     .tile .cta{margin-top:10px; display:none}
     .tile.expanded{background:rgba(26,26,26,.94); border-color:#333}
@@ -57,6 +58,11 @@
     .btn.orange:hover{transform:translateY(-2px)}
     .btn.teal{background:rgba(0,169,157,.18); color:#c8fffa; border:1px solid rgba(0,169,157,.4)}
 
+    /* Mode toggle */
+    .seg{display:flex; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); border-radius:999px; padding:4px; gap:4px; margin-bottom:8px}
+    .seg button{flex:1; background:transparent; border:none; color:#dcdcdc; font-weight:700; padding:8px 10px; border-radius:999px; cursor:pointer}
+    .seg button.active{background:#121212; color:#fff; border:1px solid #2b2b2b}
+
     /* Leader lines */
     .leader{position:fixed; z-index:2; pointer-events:none;}
 
@@ -65,7 +71,7 @@
     .scroll-ind.hide{opacity:0}
 
     /* Text block */
-    .text-block{position:fixed; right:14px; top:14px; z-index:4; max-width:40ch; opacity:0; transform:translateY(8px); transition:opacity .6s ease, transform .6s ease}
+    .text-block{position:fixed; right:14px; top:14px; z-index:4; max-width:42ch; opacity:0; transform:translateY(8px); transition:opacity .6s ease, transform .6s ease}
     .text-block.show{opacity:1; transform:none}
 
     /* Referral strip */
@@ -109,41 +115,70 @@
     </div>
   </div>
 
-  <!-- Tiles (improved spacing) -->
-  <div id="tile-asia" class="tile" role="dialog" aria-label="Asia plan">
+  <!-- Tiles (mode-aware) -->
+  <div id="tile-asia" class="tile" role="dialog" aria-label="Asia plan" data-mode="solo">
+    <div class="seg" role="tablist" aria-label="Mode">
+      <button class="seg-btn active" data-mode="solo" role="tab" aria-selected="true">Solo</button>
+      <button class="seg-btn" data-mode="group" role="tab" aria-selected="false">Group</button>
+    </div>
     <h4>Asia</h4>
-    <div class="row"><span class="muted">Base £xxx + £xxx per extra traveler</span></div>
+    <div class="row"><span class="muted">Base £xxx for you • +£xxx per extra traveler</span></div>
     <div class="row" style="margin-top:8px">
       <input type="range" min="0" max="10" value="0" data-region="asia" class="micro" />
       <span id="count-asia" class="muted">0</span>
     </div>
+    <div class="help">Traveling solo? Leave it at 0 — you can add people later.</div>
     <div class="row" style="margin-top:6px"><strong>Total £xxx</strong></div>
+    <div class="row solo-cta" style="margin-top:10px; gap:8px; justify-content:flex-start">
+      <button class="btn orange" data-action="buy-solo">Buy Solo Plan</button>
+      <span class="muted" style="font-size:11px">Add friends anytime</span>
+    </div>
     <div class="cta">
-      <div class="row" style="margin-top:8px"><span class="btn teal">Add Friends</span><button class="btn orange">Create Group Plan</button></div>
+      <div class="row" style="margin-top:8px; gap:8px; justify-content:flex-start"><span class="btn teal" data-action="add-friends">Add Friends</span><button class="btn orange" data-action="create-group">Create Group Plan</button></div>
     </div>
   </div>
-  <div id="tile-europe" class="tile" role="dialog" aria-label="Europe plan">
+
+  <div id="tile-europe" class="tile" role="dialog" aria-label="Europe plan" data-mode="solo">
+    <div class="seg" role="tablist" aria-label="Mode">
+      <button class="seg-btn active" data-mode="solo" role="tab" aria-selected="true">Solo</button>
+      <button class="seg-btn" data-mode="group" role="tab" aria-selected="false">Group</button>
+    </div>
     <h4>Europe</h4>
-    <div class="row"><span class="muted">Base £xxx + £xxx per extra traveler</span></div>
+    <div class="row"><span class="muted">Base £xxx for you • +£xxx per extra traveler</span></div>
     <div class="row" style="margin-top:8px">
       <input type="range" min="0" max="10" value="0" data-region="europe" class="micro" />
       <span id="count-europe" class="muted">0</span>
     </div>
+    <div class="help">Traveling solo? Leave it at 0 — you can add people later.</div>
     <div class="row" style="margin-top:6px"><strong>Total £xxx</strong></div>
+    <div class="row solo-cta" style="margin-top:10px; gap:8px; justify-content:flex-start">
+      <button class="btn orange" data-action="buy-solo">Buy Solo Plan</button>
+      <span class="muted" style="font-size:11px">Add friends anytime</span>
+    </div>
     <div class="cta">
-      <div class="row" style="margin-top:8px"><span class="btn teal">Add Friends</span><button class="btn orange">Create Group Plan</button></div>
+      <div class="row" style="margin-top:8px; gap:8px; justify-content:flex-start"><span class="btn teal" data-action="add-friends">Add Friends</span><button class="btn orange" data-action="create-group">Create Group Plan</button></div>
     </div>
   </div>
-  <div id="tile-americas" class="tile" role="dialog" aria-label="Americas plan">
+
+  <div id="tile-americas" class="tile" role="dialog" aria-label="Americas plan" data-mode="solo">
+    <div class="seg" role="tablist" aria-label="Mode">
+      <button class="seg-btn active" data-mode="solo" role="tab" aria-selected="true">Solo</button>
+      <button class="seg-btn" data-mode="group" role="tab" aria-selected="false">Group</button>
+    </div>
     <h4>Americas</h4>
-    <div class="row"><span class="muted">Base £xxx + £xxx per extra traveler</span></div>
+    <div class="row"><span class="muted">Base £xxx for you • +£xxx per extra traveler</span></div>
     <div class="row" style="margin-top:8px">
       <input type="range" min="0" max="10" value="0" data-region="americas" class="micro" />
       <span id="count-americas" class="muted">0</span>
     </div>
+    <div class="help">Traveling solo? Leave it at 0 — you can add people later.</div>
     <div class="row" style="margin-top:6px"><strong>Total £xxx</strong></div>
+    <div class="row solo-cta" style="margin-top:10px; gap:8px; justify-content:flex-start">
+      <button class="btn orange" data-action="buy-solo">Buy Solo Plan</button>
+      <span class="muted" style="font-size:11px">Add friends anytime</span>
+    </div>
     <div class="cta">
-      <div class="row" style="margin-top:8px"><span class="btn teal">Add Friends</span><button class="btn orange">Create Group Plan</button></div>
+      <div class="row" style="margin-top:8px; gap:8px; justify-content:flex-start"><span class="btn teal" data-action="add-friends">Add Friends</span><button class="btn orange" data-action="create-group">Create Group Plan</button></div>
     </div>
   </div>
 
@@ -158,8 +193,8 @@
   <!-- Subtle helper text -->
   <div id="heroText" class="text-block">
     <div style="font-size:12px; color:var(--muted); margin-bottom:4px">World’s first group‑eSIM</div>
-    <div style="font-size:20px; font-weight:800; line-height:1.1">One Plan. Multiple Travelers. Zero Hassle.</div>
-    <div style="font-size:13px; color:var(--muted); margin-top:6px">DuraSim is the world’s first group eSIM platform—built for travelers, not telecoms.</div>
+    <div style="font-size:20px; font-weight:800; line-height:1.1">Start solo. Invite later. Or go group from the jump.</div>
+    <div style="font-size:13px; color:var(--muted); margin-top:6px">DuraSim lets you buy a plan for yourself now and add friends anytime — perfect for flexible trips.</div>
   </div>
 
   <!-- Scroll indicator -->
@@ -213,7 +248,7 @@
     const amb = new THREE.AmbientLight(0xffffff, 0.65); scene.add(amb);
     const dir = new THREE.DirectionalLight(0xffffff, 1.0); dir.position.set(5,3,5); scene.add(dir);
 
-    // Earth texture (realistic). Using Three's example texture CDN.
+    // Earth texture
     const TEX_URL = 'https://unpkg.com/three@0.158.0/examples/textures/land_ocean_ice_cloud_2048.jpg';
     const loader = new THREE.TextureLoader();
     const earthGeo = new THREE.SphereGeometry(RADIUS, 96, 96);
@@ -234,7 +269,7 @@
       drawStars(0);
     }
 
-    // Regions and targets (lat,lon to rotation)
+    // Regions
     const regions = [
       { key:'asia',     lat:  1.3, lon: 103.8 },
       { key:'europe',   lat: 50.1, lon:   8.6 },
@@ -242,8 +277,8 @@
     ];
     function yawPitchFor(lat,lon){
       const toRad = Math.PI/180;
-      const yaw = -lon*toRad;               // rotate Y so lon faces camera
-      const pitch = lat*toRad;              // slight tilt toward latitude
+      const yaw = -lon*toRad;
+      const pitch = lat*toRad;
       return { yaw, pitch: -pitch*0.5 };
     }
 
@@ -330,31 +365,55 @@
       americas: document.getElementById('lead-americas')
     };
 
-    // Improved tile placement: radial offset away from screen center and mutual separation
+    // Mode handling per tile
+    function setMode(key, mode){
+      const tile = tiles[key];
+      const slider = tile.querySelector('input[type=range]');
+      tile.dataset.mode = mode;
+      const segBtns = tile.querySelectorAll('.seg-btn');
+      segBtns.forEach(b=>{ const active = b.dataset.mode===mode; b.classList.toggle('active', active); b.setAttribute('aria-selected', active ? 'true' : 'false'); });
+      const ctaBlock = tile.querySelector('.cta');
+      const soloCta = tile.querySelector('.solo-cta');
+      if(mode==='solo'){
+        ctaBlock.style.display = 'none';
+        soloCta.style.display = 'flex';
+        // Solo: slider disabled and zeroed
+        slider.value = 0;
+        const count = tile.querySelector('#count-'+key);
+        if(count) count.textContent = '0';
+        slider.setAttribute('disabled','true');
+      } else {
+        ctaBlock.style.display = 'block';
+        soloCta.style.display = 'none';
+        slider.removeAttribute('disabled');
+      }
+      log('mode-change', {region:key, mode});
+    }
+
+    // Improved tile placement: radial offset + separation
     function placeUI(){
       const W = renderer.domElement.clientWidth, H = renderer.domElement.clientHeight;
       const cx = W/2, cy = H/2;
       const placed = [];
-      regions.forEach((r, idx)=>{
+      regions.forEach((r)=>{
         const p = projectLatLon(r.lat, r.lon);
         const key = r.key; const elHs = hs[key]; const elTile = tiles[key]; const elLead = leaders[key];
         // Hotspot
         elHs.style.left = p.x+'px'; elHs.style.top = p.y+'px'; elHs.style.opacity = p.visible?1:0.15;
         // Base tile offset away from center plus per-region angle
         const ang = Math.atan2(p.y-cy, p.x-cx);
-        let dist = 160; // base distance from hotspot
-        // per-region bias to distribute space
+        let dist = 170; // base distance from hotspot
         const bias = {asia: 0.4, europe: -0.4, americas: 0.0}[key] || 0;
         const offA = ang + bias;
         let tx = p.x + Math.cos(offA)*dist;
         let ty = p.y + Math.sin(offA)*dist;
         // Keep in viewport
-        tx = Math.max(14, Math.min(W-274, tx));
-        ty = Math.max(14, Math.min(H-170, ty));
-        // Simple separation from previously placed tiles
+        tx = Math.max(14, Math.min(W-294, tx));
+        ty = Math.max(14, Math.min(H-200, ty));
+        // Separation
         for(const q of placed){
           const dx = tx - q.x; const dy = ty - q.y; const d = Math.hypot(dx,dy);
-          const minD = 220; if(d < minD){ const push = (minD-d)*0.5; const ang2 = Math.atan2(dy,dx); tx += Math.cos(ang2)*push; ty += Math.sin(ang2)*push; }
+          const minD = 230; if(d < minD){ const push = (minD-d)*0.5; const ang2 = Math.atan2(dy,dx); tx += Math.cos(ang2)*push; ty += Math.sin(ang2)*push; }
         }
         placed.push({x:tx,y:ty});
         elTile.style.left = tx+'px'; elTile.style.top = ty+'px'; elTile.style.opacity = p.visible?1:0.6;
@@ -368,11 +427,26 @@
     function setupTile(key){
       const tile = tiles[key]; const spot = hs[key];
       const slider = tile.querySelector('input[type=range]');
+      // Mode buttons
+      tile.querySelectorAll('.seg-btn').forEach(btn=>{
+        btn.addEventListener('click', (e)=>{ setMode(key, btn.dataset.mode); e.stopPropagation(); });
+      });
+      // Init solo
+      setMode(key, 'solo');
+      // Slider
       slider.addEventListener('input', ()=>{ document.getElementById('count-'+key).textContent = slider.value; log('slider', {region:key, value:slider.value, total:'£xxx'}); });
+      // Toggle expansion via hotspot or tile click
       function toggle(){ tile.classList.toggle('expanded'); log('tile-toggle', {region:key, expanded:tile.classList.contains('expanded')}); }
       spot.addEventListener('click', (e)=>{ toggle(); e.stopPropagation(); });
       tile.addEventListener('click', (e)=>{ toggle(); e.stopPropagation(); });
-      tile.querySelectorAll('.btn').forEach(btn=> btn.addEventListener('click', (e)=>{ log('cta', {region:key, action:btn.textContent.trim()}); e.stopPropagation(); }));
+      // CTAs
+      tile.querySelectorAll('[data-action]')?.forEach(btn=> btn.addEventListener('click', (e)=>{
+        const action = btn.getAttribute('data-action');
+        const mode = tile.dataset.mode;
+        const extras = Number(slider.value);
+        log('cta', {region:key, action, mode, extras, total:'£xxx'});
+        e.stopPropagation();
+      }));
       spot.addEventListener('pointerenter', ()=> log('hotspot-hover', {region:key}));
     }
     ['asia','europe','americas'].forEach(setupTile);
@@ -394,7 +468,6 @@
     function animate(){
       t+=1/60;
       // ease rotations
-      // Snap targetYaw to 30° grid when close
       const snap = Math.round(targetYaw/STEP)*STEP; if(Math.abs(targetYaw-snap) < (5*Math.PI/180)) targetYaw = snap;
       yaw += (targetYaw - yaw) * 0.07;
       pitch += (targetPitch - pitch) * 0.07;
