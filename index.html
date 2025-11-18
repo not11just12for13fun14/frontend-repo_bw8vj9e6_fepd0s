@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>DuraSim — Group eSIM (Dark)</title>
+  <title>DuraSim — Group eSIM (Dark • 3D Globe)</title>
   <meta name="description" content="DuraSim is the world’s first group‑eSIM platform." />
   <style>
     :root{
@@ -16,16 +16,12 @@
     }
     *{box-sizing:border-box}
     html,body{height:100%}
-    body{
-      margin:0; background:var(--bg); color:var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      overflow-x:hidden;
-    }
+    body{ margin:0; background:var(--bg); color:var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; overflow:hidden; }
     a{color:inherit; text-decoration:none}
 
-    /* Canvases fill viewport */
-    .stage{position:fixed; inset:0; pointer-events:none}
-    #stars{z-index:0}
-    #globe{z-index:1}
+    /* Layers */
+    #three-stage{position:fixed; inset:0; z-index:0; background:radial-gradient(1200px 600px at 50% -100px, rgba(255,107,53,.08), transparent), #0A0A0A}
+    #stars{position:fixed; inset:0; z-index:0; pointer-events:none}
 
     /* Header */
     .header{position:fixed; top:14px; left:14px; z-index:5; display:flex; align-items:center; gap:.6rem}
@@ -42,27 +38,35 @@
     .nav-links{display:grid; gap:12px}
     .nav-links a{display:block; padding:12px 14px; border-radius:12px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06)}
 
-    /* Floating tiles */
-    .tile{position:fixed; z-index:4; background:rgba(26,26,26,.78); color:var(--text); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:12px; backdrop-filter:blur(6px); box-shadow:0 12px 40px rgba(0,0,0,.5); width:210px; transform-origin:center; transition:transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease;}
+    /* Hotspots */
+    .hotspot{position:fixed; z-index:3; width:22px; height:22px; border-radius:50%; background:var(--orange); box-shadow:0 0 22px rgba(255,107,53,.95), 0 0 50px rgba(255,107,53,.45) inset; transform:translate(-50%,-50%) scale(1); pointer-events:auto; transition:transform .15s ease}
+    .hotspot:hover{transform:translate(-50%,-50%) scale(1.2)}
+
+    /* Tiles (less clustered: smart offsets, larger, auto-nudge) */
+    .tile{position:fixed; z-index:4; background:rgba(26,26,26,.86); color:var(--text); border:1px solid rgba(255,255,255,.08); border-radius:16px; padding:14px; backdrop-filter:blur(8px); box-shadow:0 16px 44px rgba(0,0,0,.55); width:260px; transform-origin:center; transition:transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease, opacity .2s ease}
     .tile:hover{transform:translateY(-2px)}
-    .tile h4{margin:0 0 6px 0; font-size:14px; letter-spacing:.2px}
+    .tile h4{margin:0 0 6px 0; font-size:16px; letter-spacing:.2px}
     .tile .row{display:flex; align-items:center; justify-content:space-between; gap:10px}
     .tile .muted{color:var(--muted); font-size:12px}
     .tile input[type=range]{width:100%}
-    .tile .cta{margin-top:8px; display:none}
-    .tile.expanded{background:rgba(26,26,26,.92); border-color:#333}
+    .tile .cta{margin-top:10px; display:none}
+    .tile.expanded{background:rgba(26,26,26,.94); border-color:#333}
     .tile.expanded .cta{display:block}
     .btn{display:inline-flex; align-items:center; justify-content:center; gap:.5rem; border:none; cursor:pointer; font-weight:800; letter-spacing:.2px; border-radius:999px; padding:10px 14px; transition:transform .18s ease, box-shadow .18s ease}
     .btn.orange{background:var(--orange); color:#111; box-shadow:0 8px 26px rgba(255,107,53,.35)}
     .btn.orange:hover{transform:translateY(-2px)}
     .btn.teal{background:rgba(0,169,157,.18); color:#c8fffa; border:1px solid rgba(0,169,157,.4)}
 
-    /* Hotspots */
-    .hotspot{position:fixed; z-index:3; width:18px; height:18px; border-radius:50%; background:var(--orange); box-shadow:0 0 18px rgba(255,107,53,.8), 0 0 40px rgba(255,107,53,.35) inset; transform:translate(-50%,-50%); pointer-events:auto}
+    /* Leader lines */
+    .leader{position:fixed; z-index:2; pointer-events:none;}
 
     /* Scroll indicator */
     .scroll-ind{position:fixed; left:50%; bottom:18px; transform:translateX(-50%); z-index:4; opacity:1; transition:opacity .6s ease}
     .scroll-ind.hide{opacity:0}
+
+    /* Text block */
+    .text-block{position:fixed; right:14px; top:14px; z-index:4; max-width:40ch; opacity:0; transform:translateY(8px); transition:opacity .6s ease, transform .6s ease}
+    .text-block.show{opacity:1; transform:none}
 
     /* Referral strip */
     .ref-strip{position:fixed; left:0; right:0; bottom:0; z-index:6; background:var(--orange); color:#111; display:flex; align-items:center; justify-content:center; gap:12px; padding:10px 14px; font-weight:700; box-shadow:0 -10px 30px rgba(255,107,53,.2)}
@@ -75,16 +79,11 @@
     .sheet .row{display:flex; gap:10px}
     .sheet input{flex:1; padding:10px 12px; border-radius:10px; border:1px solid #2b2b2b; background:#0f0f0f; color:#fff}
     .sheet button{padding:10px 12px; border-radius:10px; border:1px solid #2b2b2b; background:var(--orange); color:#111; font-weight:800; cursor:pointer}
-
-    /* Text blocks fade-in */
-    .text-block{position:fixed; right:14px; top:14px; z-index:4; max-width:40ch; opacity:0; transform:translateY(8px); transition:opacity .6s ease, transform .6s ease}
-    .text-block.show{opacity:1; transform:none}
   </style>
 </head>
 <body>
-  <!-- Parallax stars and Globe canvases -->
-  <canvas id="stars" class="stage" aria-hidden="true"></canvas>
-  <canvas id="globe" class="stage" aria-label="Interactive globe"></canvas>
+  <canvas id="stars" aria-hidden="true"></canvas>
+  <div id="three-stage" aria-label="3D globe"></div>
 
   <!-- Header with brand + burger -->
   <div class="header">
@@ -110,7 +109,7 @@
     </div>
   </div>
 
-  <!-- Floating tiles for each region -->
+  <!-- Tiles (improved spacing) -->
   <div id="tile-asia" class="tile" role="dialog" aria-label="Asia plan">
     <h4>Asia</h4>
     <div class="row"><span class="muted">Base £xxx + £xxx per extra traveler</span></div>
@@ -148,10 +147,13 @@
     </div>
   </div>
 
-  <!-- Hotspots -->
+  <!-- Hotspots + leader SVGs -->
   <div id="hs-asia" class="hotspot" title="Asia"></div>
   <div id="hs-europe" class="hotspot" title="Europe"></div>
   <div id="hs-americas" class="hotspot" title="Americas"></div>
+  <svg id="lead-asia" class="leader"></svg>
+  <svg id="lead-europe" class="leader"></svg>
+  <svg id="lead-americas" class="leader"></svg>
 
   <!-- Subtle helper text -->
   <div id="heroText" class="text-block">
@@ -183,197 +185,195 @@
     </div>
   </div>
 
+  <!-- Three.js from CDN (for 3D rendering) -->
+  <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+
   <script>
   (function(){
     const log = (...args)=>console.log('[DEBUG]', ...args);
 
-    // Canvases and sizes
+    // Stars
     const stars = document.getElementById('stars');
-    const globe = document.getElementById('globe');
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const sctx = stars.getContext('2d');
+    const STAR_COUNT = 180;
+    const starField = Array.from({length:STAR_COUNT}, ()=>({ x: Math.random(), y: Math.random(), r: Math.random()*1.3 + .2, o: .3 + Math.random()*.7 }));
+
+    // Three.js scene
+    const stage = document.getElementById('three-stage');
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+    stage.appendChild(renderer.domElement);
+
+    // Bigger globe: radius 1.4, camera distance ~3.2
+    const RADIUS = 1.4;
+    camera.position.set(0, 0.15, 3.2);
+
+    // Lights
+    const amb = new THREE.AmbientLight(0xffffff, 0.65); scene.add(amb);
+    const dir = new THREE.DirectionalLight(0xffffff, 1.0); dir.position.set(5,3,5); scene.add(dir);
+
+    // Earth texture (realistic). Using Three's example texture CDN.
+    const TEX_URL = 'https://unpkg.com/three@0.158.0/examples/textures/land_ocean_ice_cloud_2048.jpg';
+    const loader = new THREE.TextureLoader();
+    const earthGeo = new THREE.SphereGeometry(RADIUS, 96, 96);
+    const earthMat = new THREE.MeshPhongMaterial({ map: loader.load(TEX_URL), shininess: 8 });
+    const earth = new THREE.Mesh(earthGeo, earthMat); scene.add(earth);
+
+    // Subtle atmosphere glow
+    const atmoGeo = new THREE.SphereGeometry(RADIUS*1.03, 64, 64);
+    const atmoMat = new THREE.MeshBasicMaterial({ color: 0xFF6B35, transparent:true, opacity:0.08, blending: THREE.AdditiveBlending });
+    const atmo = new THREE.Mesh(atmoGeo, atmoMat); scene.add(atmo);
+
+    // Resize
     function resize(){
       const w = window.innerWidth, h = window.innerHeight;
-      [stars, globe].forEach(c=>{ c.width = Math.floor(w*dpr); c.height = Math.floor(h*dpr); c.style.width=w+'px'; c.style.height=h+'px'; });
-      sctx.setTransform(dpr,0,0,dpr,0,0);
-      gctx.setTransform(dpr,0,0,dpr,0,0);
-      updatePositions();
-    }
-    const sctx = stars.getContext('2d');
-    const gctx = globe.getContext('2d');
-
-    // Star field
-    const STAR_COUNT = 160;
-    const starField = Array.from({length:STAR_COUNT}, ()=>({ x: Math.random(), y: Math.random(), r: Math.random()*1.2 + .2, o: .3 + Math.random()*.7 }));
-    function drawStars(offsetY=0){
-      const w = window.innerWidth, h = window.innerHeight;
-      sctx.clearRect(0,0,w,h);
-      sctx.fillStyle = '#000'; sctx.fillRect(0,0,w,h);
-      for(const s of starField){
-        const px = s.x * w;
-        const py = (s.y * h) + offsetY * (0.08 + s.r*0.02);
-        sctx.beginPath(); sctx.arc(px, ((py%h)+h)%h, s.r, 0, Math.PI*2); sctx.closePath();
-        sctx.fillStyle = `rgba(255,255,255,${s.o})`;
-        sctx.fill();
-      }
+      stars.width = w; stars.height = h;
+      renderer.setSize(w, h, false);
+      camera.aspect = w/h; camera.updateProjectionMatrix();
+      drawStars(0);
     }
 
-    // Simple 3D globe drawn in 2D canvas (shaded sphere + meridians)
-    let rotY = -1.815; // start facing Asia
-    let rotYTarget = rotY;
-    let tiltX = 0.18;  // slight tilt
-    const stepRad = (30*Math.PI/180);
-
-    function drawGlobe(){
-      const w = window.innerWidth, h = window.innerHeight;
-      const cx=w/2, cy=h/2; const R = Math.min(w,h)*0.35;
-      gctx.clearRect(0,0,w,h);
-
-      // Sphere lighting
-      const grad = gctx.createRadialGradient(cx - R*0.3, cy - R*0.3, R*0.2, cx, cy, R*1.2);
-      grad.addColorStop(0, '#0f2b29');
-      grad.addColorStop(1, '#0c1413');
-      gctx.fillStyle = grad; gctx.beginPath(); gctx.arc(cx,cy,R,0,Math.PI*2); gctx.fill();
-
-      // Atmosphere glow
-      const glowGrad = gctx.createRadialGradient(cx, cy, R*0.9, cx, cy, R*1.3);
-      glowGrad.addColorStop(0, 'rgba(0,169,157,0.0)');
-      glowGrad.addColorStop(1, 'rgba(0,169,157,0.25)');
-      gctx.fillStyle = glowGrad; gctx.beginPath(); gctx.arc(cx,cy,R*1.15,0,Math.PI*2); gctx.fill();
-
-      // Meridians/Parallels for hint of 3D
-      gctx.lineWidth = 1;
-      gctx.strokeStyle = 'rgba(255,255,255,.06)';
-      for(let lat=-60; lat<=60; lat+=30){ drawCircleLat(lat); }
-      for(let lon=0; lon<180; lon+=30){ drawCircleLon(lon); }
-
-      function project(lat, lon){
-        // Convert to 3D unit sphere, apply rotations, then project to 2D
-        const toRad = Math.PI/180; lat*=toRad; lon*=toRad;
-        let x = Math.cos(lat)*Math.cos(lon);
-        let y = Math.sin(lat);
-        let z = Math.cos(lat)*Math.sin(lon);
-        // rotate around X (tilt)
-        let y2 = y*Math.cos(tiltX) - z*Math.sin(tiltX);
-        let z2 = y*Math.sin(tiltX) + z*Math.cos(tiltX);
-        y = y2; z = z2;
-        // rotate around Y (spin)
-        let x2 = x*Math.cos(rotY) + z*Math.sin(rotY);
-        z2 = -x*Math.sin(rotY) + z*Math.cos(rotY);
-        x = x2; z = z2;
-        const scale = R * 1.2 / (2.2 - z); // simple perspective
-        const sx = cx + x*scale;
-        const sy = cy - y*scale;
-        const visible = z > -0.2; // simple visibility check
-        return {x:sx, y:sy, visible, z};
-      }
-      function drawCircleLat(lat){
-        const pts=[]; for(let lon=-180; lon<=180; lon+=6){ const p=project(lat,lon); if(p.visible) pts.push(p); }
-        if(pts.length<2) return; gctx.beginPath(); gctx.moveTo(pts[0].x, pts[0].y); for(const p of pts) gctx.lineTo(p.x,p.y); gctx.stroke();
-      }
-      function drawCircleLon(lon){
-        const pts=[]; for(let lat=-80; lat<=80; lat+=6){ const p=project(lat,lon); if(p.visible) pts.push(p); }
-        if(pts.length<2) return; gctx.beginPath(); gctx.moveTo(pts[0].x, pts[0].y); for(const p of pts) gctx.lineTo(p.x,p.y); gctx.stroke();
-      }
-
-      // Update hotspot and tile positions
-      function place(region){
-        const p = project(region.lat, region.lon);
-        const hs = document.getElementById('hs-'+region.key);
-        const tile = document.getElementById('tile-'+region.key);
-        if(hs){ hs.style.left = p.x+'px'; hs.style.top = p.y+'px'; hs.style.opacity = p.visible?1:0; }
-        if(tile){ const tx = p.x + (region.tileOffsetX|| 24), ty = p.y + (region.tileOffsetY|| -24);
-          tile.style.left = Math.max(10, Math.min(window.innerWidth-220, tx)) + 'px';
-          tile.style.top = Math.max(10, Math.min(window.innerHeight-140, ty)) + 'px';
-          tile.style.opacity = p.visible?1:0.96;
-        }
-      }
-      regions.forEach(place);
-    }
-
-    // Regions
+    // Regions and targets (lat,lon to rotation)
     const regions = [
-      { key:'asia',     lat:  1.3, lon:103.8, tileOffsetX:  28, tileOffsetY:-40, facing:- (103.8*Math.PI/180) },
-      { key:'europe',   lat: 50.1, lon:  8.6, tileOffsetX: -240, tileOffsetY:-20, facing:- (  8.6*Math.PI/180) },
-      { key:'americas', lat: 19.4, lon:-99.1, tileOffsetX:  28, tileOffsetY: 28, facing:- (-99.1*Math.PI/180) }
+      { key:'asia',     lat:  1.3, lon: 103.8 },
+      { key:'europe',   lat: 50.1, lon:   8.6 },
+      { key:'americas', lat: 19.4, lon: -99.1 }
     ];
+    function yawPitchFor(lat,lon){
+      const toRad = Math.PI/180;
+      const yaw = -lon*toRad;               // rotate Y so lon faces camera
+      const pitch = lat*toRad;              // slight tilt toward latitude
+      return { yaw, pitch: -pitch*0.5 };
+    }
+
+    let targetYaw = yawPitchFor(regions[0].lat, regions[0].lon).yaw;
+    let targetPitch = yawPitchFor(regions[0].lat, regions[0].lon).pitch;
+    let yaw = targetYaw; let pitch = targetPitch;
     let regionIndex = 0;
 
-    function currentRegion(){
-      // Determine which region faces closest to center (rotY ≈ region.facing)
-      let minD=1e9, idx=0; regions.forEach((r,i)=>{ const d = Math.abs(angleDelta(rotY, r.facing)); if(d<minD){minD=d; idx=i;} });
-      return idx;
-    }
-    function angleDelta(a,b){ let d = a-b; while(d> Math.PI) d-=Math.PI*2; while(d<-Math.PI) d+=Math.PI*2; return d; }
+    // Scroll navigate regions (snap 30° thresholds)
+    const STEP = 30 * Math.PI/180;
+    let firstScroll = true;
     function stepToRegion(dir){
       regionIndex = (regionIndex + (dir>0?1:-1) + regions.length) % regions.length;
-      rotYTarget = regions[regionIndex].facing;
+      const t = yawPitchFor(regions[regionIndex].lat, regions[regionIndex].lon);
+      targetYaw = Math.round(t.yaw/STEP)*STEP; // snap target to 30°
+      targetPitch = t.pitch;
       log('scroll-step -> region', regions[regionIndex].key);
     }
-
-    // Scroll logic: step through regions; also apply smooth spin based on delta
-    let firstScroll = true;
     function onWheel(e){
       e.preventDefault();
       if(firstScroll){ document.getElementById('scrollInd').classList.add('hide'); firstScroll=false; }
       const dir = Math.sign(e.deltaY);
       stepToRegion(dir);
-      log('wheel', {deltaY:e.deltaY, target:rotYTarget});
+      log('wheel', {deltaY:e.deltaY, targetYaw});
     }
     window.addEventListener('wheel', onWheel, {passive:false});
-
-    // Touch swipe for mobile
+    // Touch
     let tsY=null; window.addEventListener('touchstart', (e)=>{ tsY=e.touches[0].clientY; }, {passive:true});
     window.addEventListener('touchend', (e)=>{ if(tsY==null) return; const dy=(e.changedTouches[0].clientY - tsY); if(Math.abs(dy)>24){ stepToRegion(dy<0?1:-1); if(firstScroll){ document.getElementById('scrollInd').classList.add('hide'); firstScroll=false; } } tsY=null; }, {passive:true});
 
-    // Mouse move to steer slightly
-    globe.addEventListener('pointermove', (e)=>{
+    // Mouse steer small
+    stage.addEventListener('pointermove', (e)=>{
       const x = (e.clientX / window.innerWidth) - .5;
-      rotYTarget += x * 0.0005 * window.innerWidth; // tiny steer
+      targetYaw += x * 0.0006 * window.innerWidth;
     }, {passive:true});
 
-    // Snapping to 30° grid when close
-    function applySnap(){
-      const snap = Math.round(rotYTarget/stepRad)*stepRad;
-      if(Math.abs(angleDelta(rotYTarget, snap)) < (5*Math.PI/180)){
-        rotYTarget = snap;
+    // Stars draw
+    function drawStars(offsetY){
+      const w = stars.width, h = stars.height;
+      sctx.clearRect(0,0,w,h);
+      for(const s of starField){
+        const px = s.x * w;
+        const py = (s.y * h) + offsetY * (0.08 + s.r*0.02);
+        sctx.beginPath(); sctx.arc(px, ((py%h)+h)%h, s.r, 0, Math.PI*2); sctx.closePath();
+        sctx.fillStyle = `rgba(255,255,255,${s.o})`; sctx.fill();
       }
     }
 
-    // Animate
-    let lastY=0; let t=0;
-    function frame(){
-      t += 1/60;
-      drawStars(window.scrollY * -0.15);
-      applySnap();
-      rotY += angleDelta(rotYTarget, rotY) * 0.08;
-      drawGlobe();
-
-      // Pulse hotspots
-      const s = 1 + Math.sin(t*2)*0.2;
-      ['asia','europe','americas'].forEach(k=>{ const el=document.getElementById('hs-'+k); el.style.transform = `translate(-50%,-50%) scale(${s})`; });
-
-      // Log region on change
-      const idx = currentRegion();
-      if(idx !== lastY){ lastY = idx; log('region', regions[idx].key); }
-
-      requestAnimationFrame(frame);
+    // Project lat/lon to screen
+    const tmp = new THREE.Vector3();
+    function projectLatLon(lat,lon){
+      const toRad = Math.PI/180; const phi = (90-lat)*toRad; const theta = (lon+180)*toRad;
+      const r = RADIUS*1.01;
+      const x = -r * Math.sin(phi) * Math.cos(theta);
+      const z =  r * Math.sin(phi) * Math.sin(theta);
+      const y =  r * Math.cos(phi);
+      tmp.set(x,y,z);
+      // apply globe rotation (yaw around Y, pitch around X)
+      tmp.applyAxisAngle(new THREE.Vector3(1,0,0), pitch);
+      tmp.applyAxisAngle(new THREE.Vector3(0,1,0), yaw);
+      // project
+      tmp.project(camera);
+      return {
+        x: (tmp.x * 0.5 + 0.5) * renderer.domElement.clientWidth,
+        y: (-tmp.y * 0.5 + 0.5) * renderer.domElement.clientHeight,
+        visible: tmp.z < 1
+      };
     }
 
-    // Interactions: tiles and hotspots
-    function setupTile(key){
-      const tile = document.getElementById('tile-'+key);
-      const hs = document.getElementById('hs-'+key);
-      const slider = tile.querySelector('input[type=range]');
-      slider.addEventListener('input', ()=>{
-        document.getElementById('count-'+key).textContent = slider.value;
-        log('slider', {region:key, value:slider.value, total:'£xxx'});
+    // Elements references
+    const hs = {
+      asia: document.getElementById('hs-asia'),
+      europe: document.getElementById('hs-europe'),
+      americas: document.getElementById('hs-americas')
+    };
+    const tiles = {
+      asia: document.getElementById('tile-asia'),
+      europe: document.getElementById('tile-europe'),
+      americas: document.getElementById('tile-americas')
+    };
+    const leaders = {
+      asia: document.getElementById('lead-asia'),
+      europe: document.getElementById('lead-europe'),
+      americas: document.getElementById('lead-americas')
+    };
+
+    // Improved tile placement: radial offset away from screen center and mutual separation
+    function placeUI(){
+      const W = renderer.domElement.clientWidth, H = renderer.domElement.clientHeight;
+      const cx = W/2, cy = H/2;
+      const placed = [];
+      regions.forEach((r, idx)=>{
+        const p = projectLatLon(r.lat, r.lon);
+        const key = r.key; const elHs = hs[key]; const elTile = tiles[key]; const elLead = leaders[key];
+        // Hotspot
+        elHs.style.left = p.x+'px'; elHs.style.top = p.y+'px'; elHs.style.opacity = p.visible?1:0.15;
+        // Base tile offset away from center plus per-region angle
+        const ang = Math.atan2(p.y-cy, p.x-cx);
+        let dist = 160; // base distance from hotspot
+        // per-region bias to distribute space
+        const bias = {asia: 0.4, europe: -0.4, americas: 0.0}[key] || 0;
+        const offA = ang + bias;
+        let tx = p.x + Math.cos(offA)*dist;
+        let ty = p.y + Math.sin(offA)*dist;
+        // Keep in viewport
+        tx = Math.max(14, Math.min(W-274, tx));
+        ty = Math.max(14, Math.min(H-170, ty));
+        // Simple separation from previously placed tiles
+        for(const q of placed){
+          const dx = tx - q.x; const dy = ty - q.y; const d = Math.hypot(dx,dy);
+          const minD = 220; if(d < minD){ const push = (minD-d)*0.5; const ang2 = Math.atan2(dy,dx); tx += Math.cos(ang2)*push; ty += Math.sin(ang2)*push; }
+        }
+        placed.push({x:tx,y:ty});
+        elTile.style.left = tx+'px'; elTile.style.top = ty+'px'; elTile.style.opacity = p.visible?1:0.6;
+        // Leader line
+        elLead.setAttribute('width', W); elLead.setAttribute('height', H);
+        elLead.innerHTML = `<svg width="${W}" height="${H}"><defs><linearGradient id="g${key}" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="rgba(255,107,53,0.8)"/><stop offset="100%" stop-color="rgba(255,107,53,0.2)"/></linearGradient></defs><path d="M ${p.x} ${p.y} Q ${(p.x+tx)/2} ${(p.y+ty)/2 - 40} ${tx+20} ${ty+20}" fill="none" stroke="url(#g${key})" stroke-width="2"/></svg>`;
       });
-      function toggleExpand(){ tile.classList.toggle('expanded'); log('tile-toggle', {region:key, expanded:tile.classList.contains('expanded')}); }
-      tile.addEventListener('click', (e)=>{ toggleExpand(); e.stopPropagation(); });
-      hs.addEventListener('click', (e)=>{ toggleExpand(); e.stopPropagation(); });
-      hs.addEventListener('pointerenter', ()=>{ hs.style.boxShadow='0 0 24px rgba(255,107,53,.95), 0 0 50px rgba(255,107,53,.45) inset'; log('hotspot-hover', {region:key}); });
-      hs.addEventListener('pointerleave', ()=>{ hs.style.boxShadow='0 0 18px rgba(255,107,53,.8), 0 0 40px rgba(255,107,53,.35) inset'; });
+    }
+
+    // Hotspot and tile interactions
+    function setupTile(key){
+      const tile = tiles[key]; const spot = hs[key];
+      const slider = tile.querySelector('input[type=range]');
+      slider.addEventListener('input', ()=>{ document.getElementById('count-'+key).textContent = slider.value; log('slider', {region:key, value:slider.value, total:'£xxx'}); });
+      function toggle(){ tile.classList.toggle('expanded'); log('tile-toggle', {region:key, expanded:tile.classList.contains('expanded')}); }
+      spot.addEventListener('click', (e)=>{ toggle(); e.stopPropagation(); });
+      tile.addEventListener('click', (e)=>{ toggle(); e.stopPropagation(); });
       tile.querySelectorAll('.btn').forEach(btn=> btn.addEventListener('click', (e)=>{ log('cta', {region:key, action:btn.textContent.trim()}); e.stopPropagation(); }));
+      spot.addEventListener('pointerenter', ()=> log('hotspot-hover', {region:key}));
     }
     ['asia','europe','americas'].forEach(setupTile);
 
@@ -387,21 +387,33 @@
     const share = document.getElementById('share');
     document.getElementById('invite').addEventListener('click', ()=>{ share.classList.add('open'); log('referral','open'); });
     share.addEventListener('click', (e)=>{ if(e.target===share){ share.classList.remove('open'); log('referral','close-backdrop'); } });
-    document.getElementById('copy').addEventListener('click', ()=>{
-      const v = document.getElementById('refLink').value; navigator.clipboard && navigator.clipboard.writeText(v);
-      log('referral','copy', v);
-    });
+    document.getElementById('copy').addEventListener('click', ()=>{ const v = document.getElementById('refLink').value; navigator.clipboard && navigator.clipboard.writeText(v); log('referral','copy', v); });
 
-    // Text block appear
-    setTimeout(()=>{ document.getElementById('heroText').classList.add('show'); }, 300);
+    // Animation loop
+    let t=0, lastRegionIdx=-1;
+    function animate(){
+      t+=1/60;
+      // ease rotations
+      // Snap targetYaw to 30° grid when close
+      const snap = Math.round(targetYaw/STEP)*STEP; if(Math.abs(targetYaw-snap) < (5*Math.PI/180)) targetYaw = snap;
+      yaw += (targetYaw - yaw) * 0.07;
+      pitch += (targetPitch - pitch) * 0.07;
+      earth.rotation.y = yaw; earth.rotation.x = pitch; atmo.rotation.copy(earth.rotation);
+
+      renderer.render(scene, camera);
+      drawStars(window.scrollY * -0.15);
+      placeUI();
+
+      // region logging by closest yaw target
+      let minD = 1e9, idx=0; regions.forEach((r,i)=>{ const ty = yawPitchFor(r.lat, r.lon).yaw; const d = Math.abs(((yaw-ty+Math.PI*3)%(Math.PI*2))-Math.PI); if(d<minD){minD=d; idx=i;} });
+      if(idx!==lastRegionIdx){ lastRegionIdx=idx; log('region', regions[idx].key); }
+      requestAnimationFrame(animate);
+    }
 
     // Init
-    window.addEventListener('resize', resize);
-    resize();
-    requestAnimationFrame(frame);
-
-    function updatePositions(){ drawGlobe(); }
-
+    window.addEventListener('resize', resize); resize();
+    document.getElementById('heroText').classList.add('show');
+    animate();
   })();
   </script>
 </body>
