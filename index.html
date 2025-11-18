@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>DuraSim — Simple Plans + 3D Globe</title>
-  <meta name="description" content="Choose a region — the globe snaps there. Simple, fast, and ready for solo or group later." />
+  <title>DuraSim — Plans + 3D Globe</title>
+  <meta name="description" content="Pick a region on the left. The globe snaps there. Choose a data plan now and add people later." />
   <style>
     :root{
       --bg:#0A0A0A;
@@ -39,24 +39,29 @@
     .nav-links{display:grid; gap:12px}
     .nav-links a{display:block; padding:12px 14px; border-radius:12px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06)}
 
-    /* Hotspots (remain on globe) */
+    /* Hotspots (globe markers) */
     .hotspot{position:fixed; z-index:3; width:18px; height:18px; border-radius:50%; background:var(--orange); box-shadow:0 0 16px rgba(255,107,53,.85), 0 0 30px rgba(255,107,53,.35) inset; transform:translate(-50%,-50%); pointer-events:auto; opacity:.95}
     .hotspot::after{content:""; position:absolute; inset:-8px; border-radius:inherit; border:1px solid rgba(255,107,53,.5); animation:pulse 1.8s infinite ease-out}
     @keyframes pulse{0%{transform:scale(0.9); opacity:.9} 70%{transform:scale(1.3); opacity:0} 100%{opacity:0}}
 
-    /* Plans panel (static) */
-    .plans{position:fixed; top:50%; right:14px; transform:translateY(-50%); z-index:4; display:flex; flex-direction:column; gap:12px; width:min(92vw, 320px)}
+    /* Plans panel (left) */
+    .plans{position:fixed; top:50%; left:14px; transform:translateY(-50%); z-index:4; display:flex; flex-direction:column; gap:12px; width:min(92vw, 340px)}
     .plan{background:rgba(26,26,26,.9); border:1px solid var(--ring); border-radius:14px; padding:14px; box-shadow:0 16px 44px rgba(0,0,0,.45)}
-    .plan h4{margin:0 0 4px 0; font-size:16px}
+    .plan h4{margin:0 0 6px 0; font-size:16px}
     .plan .muted{color:var(--muted); font-size:12px}
     .plan .row{display:flex; align-items:center; justify-content:space-between; gap:10px}
-    .plan .btn{margin-top:10px; display:inline-flex; align-items:center; justify-content:center; gap:.5rem; border:none; cursor:pointer; font-weight:800; letter-spacing:.2px; border-radius:999px; padding:10px 14px; transition:transform .18s ease, box-shadow .18s ease; background:var(--orange); color:#111; box-shadow:0 8px 26px rgba(255,107,53,.35)}
-    .plan .btn:hover{transform:translateY(-2px)}
     .plan.sel{border-color:rgba(0,169,157,.6); box-shadow:0 0 0 3px rgba(0,169,157,.15) inset}
-    .mini{font-size:11px; color:#cfcfcf; margin-top:6px}
+    .options{display:grid; gap:8px; margin-top:10px}
+    .opt{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border-radius:12px; background:#121212; border:1px solid #242424; cursor:pointer; transition:transform .18s ease, border-color .18s ease, background .18s ease}
+    .opt:hover{transform:translateY(-1px)}
+    .opt.sel{border-color:rgba(0,169,157,.6); background:#151515}
+    .opt .label{font-weight:700}
+    .opt .price{color:#fff; font-weight:800}
+    .mini{font-size:11px; color:#cfcfcf; margin-top:8px}
+    .addl{margin-top:10px; padding:10px 12px; border-radius:12px; background:rgba(0,169,157,.12); border:1px solid rgba(0,169,157,.25); color:#c8fffa; font-size:12px}
 
-    /* Text block */
-    .text-block{position:fixed; left:14px; bottom:14px; z-index:4; max-width:44ch; opacity:0; transform:translateY(8px); transition:opacity .6s ease, transform .6s ease}
+    /* Helper text */
+    .text-block{position:fixed; right:14px; bottom:14px; z-index:4; max-width:44ch; opacity:0; transform:translateY(8px); transition:opacity .6s ease, transform .6s ease}
     .text-block.show{opacity:1; transform:none}
 
     /* Scroll indicator */
@@ -76,9 +81,9 @@
     .sheet button{padding:10px 12px; border-radius:10px; border:1px solid #2b2b2b; background:var(--orange); color:#111; font-weight:800; cursor:pointer}
 
     /* Responsive: plans dock to bottom on narrow screens */
-    @media (max-width: 780px){
+    @media (max-width: 820px){
       .plans{left:0; right:0; bottom:64px; top:auto; transform:none; flex-direction:row; overflow:auto; padding:0 14px; width:100%}
-      .plan{min-width:240px}
+      .plan{min-width:260px}
       .text-block{left:14px; right:14px; bottom:84px}
     }
   </style>
@@ -111,29 +116,44 @@
     </div>
   </div>
 
-  <!-- Hotspots (globe-only markers) -->
+  <!-- Hotspots (on globe) -->
   <div id="hs-asia" class="hotspot" title="Asia"></div>
   <div id="hs-europe" class="hotspot" title="Europe"></div>
   <div id="hs-americas" class="hotspot" title="Americas"></div>
 
-  <!-- Plans (static) -->
+  <!-- Plans (left, static) -->
   <div class="plans" id="plans">
     <div class="plan" data-key="asia">
       <h4>Asia</h4>
-      <div class="row"><span class="muted">£xxx · add travelers anytime</span></div>
-      <button class="btn">Choose Plan</button>
+      <div class="row"><span class="muted">Pick a data plan — add people anytime</span></div>
+      <div class="options">
+        <div class="opt" data-plan="lite"><span class="label">Lite · xxxGB</span><span class="price">£xxx</span></div>
+        <div class="opt" data-plan="std"><span class="label">Standard · xxxGB</span><span class="price">£xxx</span></div>
+        <div class="opt" data-plan="pro"><span class="label">Pro · xxxGB</span><span class="price">£xxx</span></div>
+      </div>
+      <div class="addl">Add additional people to your group plan for £xx each.</div>
       <div class="mini">Covers key destinations across APAC.</div>
     </div>
     <div class="plan" data-key="europe">
       <h4>Europe</h4>
-      <div class="row"><span class="muted">£xxx · add travelers anytime</span></div>
-      <button class="btn">Choose Plan</button>
+      <div class="row"><span class="muted">Pick a data plan — add people anytime</span></div>
+      <div class="options">
+        <div class="opt" data-plan="lite"><span class="label">Lite · xxxGB</span><span class="price">£xxx</span></div>
+        <div class="opt" data-plan="std"><span class="label">Standard · xxxGB</span><span class="price">£xxx</span></div>
+        <div class="opt" data-plan="pro"><span class="label">Pro · xxxGB</span><span class="price">£xxx</span></div>
+      </div>
+      <div class="addl">Add additional people to your group plan for £xx each.</div>
       <div class="mini">Works across the EU and UK.</div>
     </div>
     <div class="plan" data-key="americas">
       <h4>Americas</h4>
-      <div class="row"><span class="muted">£xxx · add travelers anytime</span></div>
-      <button class="btn">Choose Plan</button>
+      <div class="row"><span class="muted">Pick a data plan — add people anytime</span></div>
+      <div class="options">
+        <div class="opt" data-plan="lite"><span class="label">Lite · xxxGB</span><span class="price">£xxx</span></div>
+        <div class="opt" data-plan="std"><span class="label">Standard · xxxGB</span><span class="price">£xxx</span></div>
+        <div class="opt" data-plan="pro"><span class="label">Pro · xxxGB</span><span class="price">£xxx</span></div>
+      </div>
+      <div class="addl">Add additional people to your group plan for £xx each.</div>
       <div class="mini">From Canada to Argentina.</div>
     </div>
   </div>
@@ -141,7 +161,7 @@
   <!-- Helper text -->
   <div id="heroText" class="text-block">
     <div style="font-size:12px; color:var(--muted); margin-bottom:4px">Group‑eSIM, simplified</div>
-    <div style="font-size:20px; font-weight:800; line-height:1.1">Pick a region. We’ll spin you there.</div>
+    <div style="font-size:20px; font-weight:800; line-height:1.1">Pick a region on the left. We’ll spin you there.</div>
     <div style="font-size:13px; color:var(--muted); margin-top:6px">Buy for yourself now — invite friends later. One plan, multiple travelers, on your terms.</div>
   </div>
 
@@ -233,10 +253,10 @@
     let targetYaw = yawPitchFor(regions[0].lat, regions[0].lon).yaw;
     let targetPitch = yawPitchFor(regions[0].lat, regions[0].lon).pitch;
     let yaw = targetYaw; let pitch = targetPitch;
-    let regionIndex = 0;
 
     // Scroll navigate regions (optional)
     const STEP = 30 * Math.PI/180;
+    let regionIndex = 0;
     let firstScroll = true;
     function stepToRegion(dir){
       regionIndex = (regionIndex + (dir>0?1:-1) + regions.length) % regions.length;
@@ -284,10 +304,13 @@
       });
     }
 
-    // Plans interactions (static panel)
+    // Plans interactions (static left panel)
     const planEls = Array.from(document.querySelectorAll('.plan'));
-    function setSelected(key){
+    function setSelectedCard(key){
       planEls.forEach(el=> el.classList.toggle('sel', el.dataset.key===key));
+    }
+    function setSelectedPlan(cardEl, planKey){
+      cardEl.querySelectorAll('.opt').forEach(o=> o.classList.toggle('sel', o.dataset.plan===planKey));
     }
     function focusRegion(key){
       const r = regions.find(x=>x.key===key);
@@ -295,21 +318,25 @@
       const t = yawPitchFor(r.lat, r.lon);
       targetYaw = Math.round(t.yaw/STEP)*STEP;
       targetPitch = t.pitch;
-      setSelected(key);
+      setSelectedCard(key);
       log('focus', key);
     }
-    // Click on plan or its button
-    planEls.forEach(el=>{
-      el.addEventListener('click', (e)=>{
-        const key = el.dataset.key; focusRegion(key);
-      });
-      el.querySelector('.btn').addEventListener('click', (e)=>{
-        e.stopPropagation();
-        const key = el.dataset.key; focusRegion(key); log('cta', {region:key, action:'choose-plan'});
+
+    // Click: card focuses region; option selects plan and focuses
+    planEls.forEach(card=>{
+      const key = card.dataset.key;
+      card.addEventListener('click', ()=>{ focusRegion(key); });
+      card.querySelectorAll('.opt').forEach(opt=>{
+        opt.addEventListener('click', (e)=>{
+          e.stopPropagation();
+          setSelectedPlan(card, opt.dataset.plan);
+          focusRegion(key);
+          log('plan-select', {region:key, plan:opt.dataset.plan});
+        });
       });
     });
 
-    // Hotspot clicks also select plan
+    // Hotspot clicks also select card
     Object.entries(hs).forEach(([key,el])=>{
       el.addEventListener('click', ()=>{ focusRegion(key); });
     });
@@ -341,7 +368,6 @@
     // Animation loop
     let lastRegionIdx=-1;
     function animate(){
-      // ease rotations
       const snap = Math.round(targetYaw/STEP)*STEP; if(Math.abs(targetYaw-snap) < (5*Math.PI/180)) targetYaw = snap;
       yaw += (targetYaw - yaw) * 0.07;
       pitch += (targetPitch - pitch) * 0.07;
@@ -351,16 +377,18 @@
       drawStars(window.scrollY * -0.15);
       placeHotspots();
 
-      // Update selected plan by closest yaw
+      // Update selected card by closest yaw
       let minD = 1e9, idx=0; regions.forEach((r,i)=>{ const ty = yawPitchFor(r.lat, r.lon).yaw; const d = Math.abs(((yaw-ty+Math.PI*3)%(Math.PI*2))-Math.PI); if(d<minD){minD=d; idx=i;} });
-      if(idx!==lastRegionIdx){ lastRegionIdx=idx; setSelected(regions[idx].key); log('region', regions[idx].key); }
+      const currentKey = regions[idx].key;
+      if(currentKey!==lastRegionIdx){ setSelectedCard(currentKey); log('region', currentKey); }
+      lastRegionIdx = currentKey;
       requestAnimationFrame(animate);
     }
 
     // Init
     window.addEventListener('resize', resize); resize();
     document.getElementById('heroText').classList.add('show');
-    setSelected('asia');
+    setSelectedCard('asia');
     animate();
   })();
   </script>
