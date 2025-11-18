@@ -1,30 +1,17 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
 
+// Minimal Vite config for a single-file index.html app.
+// - No React plugin (not needed for plain HTML/Three.js)
+// - Ensure server stays up with HMR/watch enabled by default
+// - Serve from project root where index.html lives
 export default defineConfig({
-  plugins: [react()],
-  optimizeDeps: {
-    // Exclude packages that shouldn't be pre-bundled
-    exclude: [],
-    // Entries point for dependency pre-bundling
-    entries: ['./src/**/*.{js,jsx,ts,tsx}'],
-    // Hold the first optimizeDeps run until all dependencies are discovered
-    holdUntilCrawlEnd: true
-  },
+  root: '.',
+  publicDir: 'public',
   server: {
-    port: 3000,
     host: '0.0.0.0',
+    port: 3000,
     strictPort: true,
-    hmr: false,
-    watch: false,
-    cors: {
-      origin: '*',
-      credentials: true
-    },
-    allowedHosts: [
-      '.modal.host',
-      'localhost',
-      '127.0.0.1'
-    ]
-  }
-})
+    // Use Vite defaults for HMR and watcher (both enabled)
+    hmr: true,
+  },
+});
