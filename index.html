@@ -31,7 +31,7 @@
     .splash .shimmer{position:relative; width:min(62vw, 520px); height:10px; border-radius:999px; overflow:hidden; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.06)}
     .splash .shimmer::before{content:""; position:absolute; inset:-2px; background:linear-gradient(90deg, transparent, rgba(255,255,255,.28), transparent); transform:translateX(-100%); animation:sh 1.2s infinite ease}
     @keyframes sh{0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
-    .splash-map{position:absolute; inset:0; z-index:-1; opacity:.18; filter:blur(.4px);}
+    .splash-map{position:absolute; inset:0; z-index:-1; opacity:.18; filter:blur(.4px);} 
 
     /* Layers */
     #three-stage{position:fixed; inset:0; z-index:0; background:radial-gradient(1200px 600px at 50% -100px, rgba(255,107,53,.08), transparent), #0A0A0A}
@@ -264,9 +264,12 @@
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     stage.appendChild(renderer.domElement);
 
     const RADIUS = 1.4; // globe size
+    const globe = new THREE.Group();
+    scene.add(globe);
     camera.position.set(0, 0.15, 3.2);
 
     // Lights
@@ -278,12 +281,12 @@
     const TEX_URL = 'https://unpkg.com/three@0.158.0/examples/textures/land_ocean_ice_cloud_2048.jpg';
     const earthGeo = new THREE.SphereGeometry(RADIUS, 96, 96);
     const earthMat = new THREE.MeshPhongMaterial({ shininess: 8 });
-    const earth = new THREE.Mesh(earthGeo, earthMat); scene.add(earth);
+    const earth = new THREE.Mesh(earthGeo, earthMat); globe.add(earth);
 
     // Atmosphere
     const atmoGeo = new THREE.SphereGeometry(RADIUS*1.03, 64, 64);
     const atmoMat = new THREE.MeshBasicMaterial({ color: 0xFF6B35, transparent:true, opacity:0.08, blending: THREE.AdditiveBlending });
-    const atmo = new THREE.Mesh(atmoGeo, atmoMat); scene.add(atmo);
+    const atmo = new THREE.Mesh(atmoGeo, atmoMat); globe.add(atmo);
 
     // Region outline overlays (teal lines, orange glow when selected)
     const overlays = [];
@@ -383,7 +386,7 @@
       });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.userData = { key, uniforms };
-      scene.add(mesh);
+      globe.add(mesh);
       overlays.push(mesh);
     }
 
@@ -441,8 +444,6 @@
     }
 
     // Floating tile behavior — center of viewport
-    let tileX = window.innerWidth/2, tileY = window.innerHeight/2; // current
-    let targetTileX = tileX, targetTileY = tileY; // target
     let tileScale = 0.92, targetScale = 1.0;
 
     // Plan boost for glow
@@ -458,11 +459,6 @@
         span.className = 'badge'; span.textContent = c; tileCountries.appendChild(span);
       });
       tile.querySelectorAll('.opt').forEach(o=>o.classList.remove('sel'));
-    }
-
-    function setTileTargetCenter(){
-      targetTileX = window.innerWidth/2;
-      targetTileY = window.innerHeight/2;
     }
 
     function showTileWithHue(){
@@ -491,9 +487,6 @@
       regionIndex = regions.findIndex(x=>x.key===key);
       updateTileFor(key);
       setSelectedRegionChip(key);
-      const p = projectLatLon(r.lat, r.lon);
-      tileX = p.x; tileY = p.y; tileScale = 0.92; targetScale = 1.0;
-      setTileTargetCenter();
       showTileWithHue();
       addon.classList.add('show');
       updateOverlaySelection(key);
@@ -580,10 +573,34 @@
       stars.width = w; stars.height = h;
       renderer.setSize(w, h, false);
       camera.aspect = w/h; camera.updateProjectionMatrix();
+      fitCameraToSphere(RADIUS);
       drawStars(0);
-      setTileTargetCenter();
+    }
 
-      // Splash map canvas sizing
+    function fitCameraToSphere(radius){
+      const fov = camera.fov * Math.PI/180;
+      const dist = radius / Math.sin(fov/2); // perfect fit
+      camera.position.z = dist * 1.15; // add a little padding
+    }
+
+    function drawStars(t){
+      const w = stars.width, h = stars.height;
+      sctx.clearRect(0,0,w,h);
+      sctx.save();
+      for(const s of starField){
+        const tw = 0.3 + Math.sin((t*0.001) + s.x*10 + s.y*7)*0.2;
+        sctx.globalAlpha = s.o * (0.75 + tw*0.25);
+        sctx.fillStyle = '#ffffff';
+        sctx.beginPath();
+        sctx.arc(s.x*w, s.y*h, s.r, 0, Math.PI*2);
+        sctx.fill();
+      }
+      sctx.restore();
+    }
+
+    // Splash map canvas sizing + draw
+    function sizeSplash(){
+      const w = window.innerWidth, h = window.innerHeight;
       splashMap.width = w * devicePixelRatio; 
       splashMap.height = h * devicePixelRatio; 
       splashMap.style.width = w + 'px';
@@ -641,12 +658,50 @@
       (err)=>{ console.warn('Texture load failed; proceeding sans map', err); dismissSplash(); }
     );
 
-    // Seed overlays with initial selection
-    focusRegion('asia');
+    // Animation loop
+    function animate(t){
+      requestAnimationFrame(animate);
 
-    // Init
-    window.addEventListener('resize', resize); resize();
-    animate();
+      // Ease rotations
+      const k = 0.06;
+      yaw += (targetYaw - yaw) * k;
+      pitch += (targetPitch - pitch) * k;
+      pitch = Math.max(-0.8, Math.min(0.8, pitch));
+      globe.rotation.set(pitch, yaw, 0);
+
+      // Gentle base spin so it's alive when idle
+      earth.rotation.y += 0.0008;
+
+      // Plan glow decay
+      planBoost *= 0.93;
+      overlays.forEach(m=>{
+        m.userData.uniforms.uPlanBoost.value = planBoost;
+      });
+
+      // Hotspots placement
+      placeHotspots();
+
+      // Tile micro scale ease
+      tileScale += (targetScale - tileScale) * 0.08;
+      tile.style.transform = `translate(-50%,-50%) scale(${tileScale.toFixed(3)})`;
+
+      // Stars
+      drawStars(t || 0);
+
+      // Render
+      renderer.render(scene, camera);
+    }
+
+    // Seed overlays with initial selection
+    function init(){
+      window.addEventListener('resize', ()=>{ resize(); sizeSplash(); });
+      resize();
+      sizeSplash();
+      focusRegion('asia');
+      animate(0);
+    }
+
+    init();
   })();
   </script>
 </body>
